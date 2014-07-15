@@ -56,23 +56,28 @@ my $isolates = $script->get_isolates_with_linked_seqs;
 my %locus_cache;
 
 foreach my $isolate_id (@$isolates) {
-	my $isolate = get_isolate_name($isolate_id);
+	my $isolate    = get_isolate_name($isolate_id);
 	my $allele_ids = $script->{'datastore'}->get_all_allele_ids($isolate_id);
 	print "$isolate_id\t$isolate";
-	foreach my $locus (@$loci){
-		if (!$locus_cache{$locus}){
+	foreach my $locus (@$loci) {
+		if ( !$locus_cache{$locus} ) {
 			$locus_cache{$locus} = $script->{'datastore'}->get_locus($locus);
 		}
-		my $seq = $locus_cache{$locus}->get_allele_sequence($allele_ids->{$locus});
-		if ($$seq){
-			print "\t" . (length $$seq);
+		my $allele_id;
+		my $seq;
+		if ( ref $allele_ids->{$locus} eq 'ARRAY' && @{ $allele_ids->{$locus} } ) {
+			$allele_id = $allele_ids->{$locus}->[0];
+			$seq       = $locus_cache{$locus}->get_allele_sequence($allele_id);
+		}
+		if ($$seq) {
+			print "\t" . ( length $$seq );
 		} else {
 			print "\t";
 		}
 	}
 	print "\n";
 }
-get_isolate_name( undef, { finish => 1 } ); #Finish statement handle
+get_isolate_name( undef, { finish => 1 } );                                        #Finish statement handle
 undef $script;
 
 sub get_isolate_name {
@@ -91,7 +96,7 @@ sub get_isolate_name {
 sub show_help {
 	print << "HELP";
 
-Usage profiles_with_species.pl -a <seqdef database config> -s <scheme id>
+Usage isolate_allele_lengths.pl -d <isolate database config> -s <scheme id>
 
 Options
 -------
