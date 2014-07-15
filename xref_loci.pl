@@ -119,24 +119,27 @@ sub main {
 	my $loci = $script->get_selected_loci;
 	print_heading("Locally defined loci in $accession_name");
 	say "Locus\t$accession_name";
+	my $out_prefix = BIGSdb::Utils::get_random();
+	my $outfile = "$out_prefix.BLAST.out";
+	
 	my %args = (
 		-num_threads => $opts{'t'} // 1,
 		-max_target_seqs => 10,
 		-word_size       => $opts{'w'} // 15,
-		-out             => 'blast.out',
+		-out             => $outfile,
 		-outfmt          => 6,
 		-dust            => 'no'
 	);
 	foreach my $locus (@$loci) {
 		my $locus_fasta = make_fasta_from_locus($locus);
 		system( BLAST_PATH . '/blastn', %args, -db => $fasta, -query => $locus_fasta );
-		my $match_locus = parse_blast_local($locus);
+		my $match_locus = parse_blast_local($locus, $outfile);
 		unlink $locus_fasta;
 		say "$locus\t$match_locus";
 		last if $EXIT;
 	}
 	$script->delete_temp_files("$fasta*");
-	unlink "blast.out";
+	unlink $outfile;
 	say "\n-- ";
 	$fasta = make_fasta_from_database($loci);
 	system( BLAST_PATH . '/makeblastdb', ( -in => $fasta, -logfile => '/dev/null', -dbtype => 'nucl' ) );
@@ -147,11 +150,14 @@ sub main {
 	foreach my $cds (@$cds) {
 		my $locus_fasta = make_locus_fasta_from_accession($cds);
 		system( BLAST_PATH . '/blastn', %args, -db => $fasta, -query => $locus_fasta );
-		my $match_locus = parse_blast_accession($cds);
+		my $match_locus = parse_blast_accession($cds, $outfile);
 		unlink $locus_fasta;
 		say "$cds->{'id'}\t$match_locus";
 		last if $EXIT;
 	}
+	$script->delete_temp_files("$fasta*");
+	unlink $outfile;
+	return
 }
 
 sub print_heading {
@@ -162,8 +168,8 @@ sub print_heading {
 }
 
 sub parse_blast_local {
-	my ($locus) = @_;
-	open( my $fh, '<', 'blast.out' ) || $logger->error("Can't open blast.out file");
+	my ($locus, $outfile) = @_;
+	open( my $fh, '<', $outfile ) || $logger->error("Can't open $outfile file");
 	my @matching_loci;
 	my %seen;
 	while ( my $line = <$fh> ) {
@@ -171,6 +177,7 @@ sub parse_blast_local {
 		my ( $allele_id, $match_locus, $identity, $alignment ) = @data[ 0 .. 3 ];
 		my $allele_seq        = $script->{'datastore'}->get_sequence( $locus, $allele_id );
 		my $allele_length     = length $$allele_seq;
+		next if !$allele_length;
 		my $percent_alignment = ( $alignment / $allele_length ) * 100;
 		if ( $percent_alignment >= $opts{'A'} && $identity >= $opts{'B'} ) {
 			push @matching_loci, $match_locus if !$seen{$match_locus};
@@ -183,8 +190,8 @@ sub parse_blast_local {
 }
 
 sub parse_blast_accession {
-	my ($cds) = @_;
-	open( my $fh, '<', 'blast.out' ) || $logger->error("Can't open blast.out file");
+	my ($cds, $outfile) = @_;
+	open( my $fh, '<', $outfile ) || $logger->error("Can't open $outfile file");
 	my @matching_loci;
 	my %seen;
 	while ( my $line = <$fh> ) {
