@@ -29,11 +29,12 @@ use Log::Log4perl qw(get_logger);
 
 #Direct all library logging calls to screen
 my $log_conf = q(
-	log4perl.category.BIGSdb.Script    = INFO, Screen
-	log4perl.category.BIGSdb.Datastore = WARN, Screen
-	log4perl.appender.Screen           = Log::Log4perl::Appender::Screen
-    log4perl.appender.Screen.stderr    = 1
-    log4perl.appender.Screen.layout    = Log::Log4perl::Layout::SimpleLayout
+	log4perl.category.BIGSdb.Script        = INFO, Screen
+	log4perl.category.BIGSdb.Dataconnector = WARN, Screen
+	log4perl.category.BIGSdb.Datastore     = WARN, Screen
+	log4perl.appender.Screen               = Log::Log4perl::Appender::Screen
+    log4perl.appender.Screen.stderr        = 1
+    log4perl.appender.Screen.layout        = Log::Log4perl::Layout::SimpleLayout
 );
 Log::Log4perl->init( \$log_conf );
 my $logger = Log::Log4perl::get_logger('BIGSdb.Script');
@@ -120,9 +121,8 @@ sub main {
 	print_heading("Locally defined loci in $accession_name");
 	say "Locus\t$accession_name";
 	my $out_prefix = BIGSdb::Utils::get_random();
-	my $outfile = "$out_prefix.BLAST.out";
-	
-	my %args = (
+	my $outfile    = "$out_prefix.BLAST.out";
+	my %args       = (
 		-num_threads => $opts{'t'} // 1,
 		-max_target_seqs => 10,
 		-word_size       => $opts{'w'} // 15,
@@ -130,16 +130,18 @@ sub main {
 		-outfmt          => 6,
 		-dust            => 'no'
 	);
+
 	foreach my $locus (@$loci) {
 		my $locus_fasta = make_fasta_from_locus($locus);
 		system( BLAST_PATH . '/blastn', %args, -db => $fasta, -query => $locus_fasta );
-		my $match_locus = parse_blast_local($locus, $outfile);
+		last if $EXIT;
+		my $match_locus = parse_blast_local( $locus, $outfile );
 		unlink $locus_fasta;
 		say "$locus\t$match_locus";
-		last if $EXIT;
 	}
 	$script->delete_temp_files("$fasta*");
 	unlink $outfile;
+	exit(1) if $EXIT;
 	say "\n-- ";
 	$fasta = make_fasta_from_database($loci);
 	system( BLAST_PATH . '/makeblastdb', ( -in => $fasta, -logfile => '/dev/null', -dbtype => 'nucl' ) );
@@ -150,14 +152,14 @@ sub main {
 	foreach my $cds (@$cds) {
 		my $locus_fasta = make_locus_fasta_from_accession($cds);
 		system( BLAST_PATH . '/blastn', %args, -db => $fasta, -query => $locus_fasta );
-		my $match_locus = parse_blast_accession($cds, $outfile);
+		last if $EXIT;
+		my $match_locus = parse_blast_accession( $cds, $outfile );
 		unlink $locus_fasta;
 		say "$cds->{'id'}\t$match_locus";
-		last if $EXIT;
 	}
 	$script->delete_temp_files("$fasta*");
 	unlink $outfile;
-	return
+	return;
 }
 
 sub print_heading {
@@ -168,15 +170,15 @@ sub print_heading {
 }
 
 sub parse_blast_local {
-	my ($locus, $outfile) = @_;
+	my ( $locus, $outfile ) = @_;
 	open( my $fh, '<', $outfile ) || $logger->error("Can't open $outfile file");
 	my @matching_loci;
 	my %seen;
 	while ( my $line = <$fh> ) {
 		my @data = split /\t/, $line;
 		my ( $allele_id, $match_locus, $identity, $alignment ) = @data[ 0 .. 3 ];
-		my $allele_seq        = $script->{'datastore'}->get_sequence( $locus, $allele_id );
-		my $allele_length     = length $$allele_seq;
+		my $allele_seq = $script->{'datastore'}->get_sequence( $locus, $allele_id );
+		my $allele_length = length $$allele_seq;
 		next if !$allele_length;
 		my $percent_alignment = ( $alignment / $allele_length ) * 100;
 		if ( $percent_alignment >= $opts{'A'} && $identity >= $opts{'B'} ) {
@@ -190,7 +192,7 @@ sub parse_blast_local {
 }
 
 sub parse_blast_accession {
-	my ($cds, $outfile) = @_;
+	my ( $cds, $outfile ) = @_;
 	open( my $fh, '<', $outfile ) || $logger->error("Can't open $outfile file");
 	my @matching_loci;
 	my %seen;
