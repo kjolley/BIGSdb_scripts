@@ -223,7 +223,7 @@ sub make_fasta_from_database {
 		  ->run_query( "SELECT allele_id,sequence FROM sequences WHERE locus=? AND locus IN (SELECT id FROM loci WHERE data_type='DNA')",
 			$locus, { fetch => 'all_arrayref', slice => {}, cache => 'make_fasta_from_database' } );
 		foreach (@$sequences) {
-			say $fh ">$locus::$_->{'allele_id'}";
+			say $fh ">$locus" . '::' . $_->{'allele_id'};
 			say $fh $_->{'sequence'};
 		}
 	}
@@ -234,9 +234,9 @@ sub make_fasta_from_database {
 sub make_locus_fasta_from_accession {
 	my ($cds)    = @_;
 	my $prefix   = BIGSdb::Utils::get_random();
-	my $filename = "$prefix.fas";
-	open( my $fh, '>', $filename ) || die "Can't create temporary file $filename";
-	say $fh ">$cds->{'id'}";
+	my $filename = "$prefix . fas ";
+	open( my $fh, '>', $filename ) || die " Can't create temporary file $filename";
+	say $fh " > $cds->{'id'} ";
 	say $fh $cds->{'seq'};
 	close $fh;
 	return $filename;
@@ -245,10 +245,10 @@ sub make_locus_fasta_from_accession {
 sub make_fasta_from_accession {
 	my $cds      = get_cds($seq_obj);
 	my $prefix   = BIGSdb::Utils::get_random();
-	my $filename = "$prefix.fas";
-	open( my $fh, '>', $filename ) || die "Can't create temporary file $filename";
+	my $filename = "$prefix . fas ";
+	open( my $fh, '>', $filename ) || die " Can't create temporary file $filename";
 	foreach (@$cds) {
-		say $fh ">$_->{'id'}";
+		say $fh " > $_->{'id'} ";
 		say $fh $_->{'seq'};
 	}
 	close $fh;
@@ -257,7 +257,7 @@ sub make_fasta_from_accession {
 
 sub make_fasta_from_locus {
 	my ($locus) = @_;
-	my $sequences = $script->{'datastore'}->run_query( "SELECT allele_id, sequence FROM sequences WHERE locus=? ORDER BY allele_id",
+	my $sequences = $script->{'datastore'}->run_query( " SELECT allele_id, sequence FROM sequences WHERE locus = ? ORDER BY allele_id",
 		$locus, { fetch => 'all_arrayref', slice => {} } );
 	my $filename = "$locus.fas";
 	open( my $fh, '>', $filename ) || die "Can't create $filename";
