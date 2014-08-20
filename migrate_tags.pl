@@ -1,9 +1,10 @@
 #!/usr/bin/perl -T
 #Move sequences, designations and tags between BIGSdb databases
 #Corresponding isolate records need to exist in both databases prior to migration.
-#Written by Keith Jolley 2011
+#Written by Keith Jolley 2011-2014
 use strict;
 use warnings;
+use 5.010;
 ###########Local configuration################################
 use constant {
 	CONFIG_DIR       => '/etc/bigsdb',
@@ -20,19 +21,31 @@ use List::MoreUtils qw(any);
 use Getopt::Std;
 use BIGSdb::Utils;
 use BIGSdb_Scripts::Migrate;
+use Log::Log4perl qw(get_logger);
+
+#Direct all library logging calls to screen
+my $log_conf = q(
+	log4perl.category.BIGSdb.Script        = INFO, Screen
+	log4perl.category.BIGSdb.Dataconnector = WARN, Screen
+	log4perl.category.BIGSdb.Datastore     = WARN, Screen
+	log4perl.appender.Screen               = Log::Log4perl::Appender::Screen
+    log4perl.appender.Screen.stderr        = 1
+    log4perl.appender.Screen.layout        = Log::Log4perl::Layout::SimpleLayout
+);
+Log::Log4perl->init( \$log_conf );
+my $logger = Log::Log4perl::get_logger('BIGSdb.Script');
 my %opts;
 getopts( 'a:b:i:j:hqn', \%opts );
-
 if ( $opts{'h'} ) {
 	show_help();
 	exit;
 }
 if ( any { !$opts{$_} } qw (a b i j) ) {
-	print "\nUsage: migrate_tags.pl -a <source database config> -b <destination database config> -i <id> -j <id>\n\n";
-	print "Help: migrate_tags.pl -h\n";
+	say "Usage: migrate_tags.pl -a <source database config> -b <destination database config> -i <id> -j <id>\n";
+	say "Help: migrate_tags.pl -h";
 	exit;
 }
-$opts{'throw_busy_exception'} = 1;
+$opts{'throw_busy_exception'} = 0;
 my $script = BIGSdb_Scripts::Migrate->new(
 	{
 		config_dir       => CONFIG_DIR,
@@ -44,7 +57,7 @@ my $script = BIGSdb_Scripts::Migrate->new(
 		password         => PASSWORD,
 		options          => \%opts,
 		instance         => $opts{'a'},
-		writable         => 1
+		logger           => $logger
 	}
 );
 my $i = $opts{'i'};    #source isolate id
@@ -72,9 +85,8 @@ if ( !$opts{'n'} ) {
 	my $designations =
 	  $script->{'datastore'}->run_list_query_hashref( "SELECT * FROM allele_designations WHERE isolate_id=? ORDER BY locus", $i );
 	my $sql =
-	  $script->{'db2'}->{ $opts{'b'} }->prepare(
-"INSERT INTO allele_designations (isolate_id,locus,allele_id,sender,status,method,curator,date_entered,datestamp,comments) VALUES (?,?,?,?,?,?,?,?,?,?)"
-	  );
+	  $script->{'db2'}->{ $opts{'b'} }->prepare( "INSERT INTO allele_designations (isolate_id,locus,allele_id,sender,status,method,"
+		  . "curator,date_entered,datestamp,comments) VALUES (?,?,?,?,?,?,?,?,?,?)" );
 	foreach (@$designations) {
 		if ( $script->is_locus_in_destination( $_->{'locus'} ) ) {
 			eval {
@@ -92,34 +104,13 @@ if ( !$opts{'n'} ) {
 			print "Locus $_->{'locus'} not in destination - skipping.\n" if !$opts{'q'};
 		}
 	}
-#	my $pending =
-#	  $script->{'datastore'}->run_list_query_hashref( "SELECT * FROM pending_allele_designations WHERE isolate_id=? ORDER BY locus", $i );
-#	$sql =
-#	  $script->{'db2'}->{ $opts{'b'} }->prepare(
-#"INSERT INTO pending_allele_designations (isolate_id,locus,allele_id,sender,method,curator,date_entered,datestamp,comments) VALUES (?,?,?,?,?,?,?,?,?)"
-#	  );
-#	foreach (@$pending) {
-#		if ( $script->is_locus_in_destination( $_->{'locus'} ) ) {
-#			eval {
-#				$sql->execute(
-#					$j,                                        $_->{'locus'},     $_->{'allele_id'},
-#					$script->{'user_map'}->{ $_->{'sender'} }, $_->{'method'},    $script->{'user_map'}->{ $_->{'curator'} },
-#					$_->{'date_entered'},                      $_->{'datestamp'}, $_->{'comments'}
-#				);
-#			};
-#			if ($@) {
-#				$script->{'db2'}->{ $opts{'b'} }->rollback;
-#				die "$@\n" if $@;
-#			}
-#		}
-#	}
 }
 my $sequences = $script->{'datastore'}->run_list_query_hashref( "SELECT * FROM sequence_bin WHERE isolate_id=? ORDER BY id", $i );
 my $sql =
-  $script->{'db2'}->{ $opts{'b'} }->prepare(
-"INSERT INTO sequence_bin (id, isolate_id, sequence, method, original_designation, comments, sender, curator, date_entered, datestamp) VALUES (?,?,?,?,?,?,?,?,?,?)"
-  );
+  $script->{'db2'}->{ $opts{'b'} }->prepare( "INSERT INTO sequence_bin (id,isolate_id,sequence,method,original_designation,comments,"
+	  . "sender,curator,date_entered,datestamp) VALUES (?,?,?,?,?,?,?,?,?,?)" );
 my %sequence_map;
+my %allele_sequence_map;
 my $last_one;
 foreach (@$sequences) {
 	my $next = $script->get_next_id( 'sequence_bin', $last_one );
@@ -143,9 +134,10 @@ if ( !$opts{'n'} ) {
 	my $allele_sequences =
 	  $script->{'datastore'}->run_list_query_hashref( "SELECT allele_sequences.* FROM allele_sequences WHERE isolate_id=?", $i );
 	$sql =
-	  $script->{'db2'}->{ $opts{'b'} }->prepare(
-"INSERT INTO allele_sequences (seqbin_id, locus, start_pos, end_pos, reverse, complete, curator, datestamp) VALUES (?,?,?,?,?,?,?,?)"
-	  );
+	  $script->{'db2'}->{ $opts{'b'} }->prepare( "INSERT INTO allele_sequences (seqbin_id,locus,start_pos,end_pos,reverse,complete,curator,"
+		  . "datestamp) VALUES (?,?,?,?,?,?,?,?)" );
+	my $allele_seq_sql =
+	  $script->{'db2'}->{ $opts{'b'} }->prepare("SELECT id FROM allele_sequences WHERE (seqbin_id,locus,start_pos,end_pos)=(?,?,?,?)");
 	foreach (@$allele_sequences) {
 		if ( $script->is_locus_in_destination( $_->{'locus'} ) ) {
 			eval {
@@ -155,28 +147,34 @@ if ( !$opts{'n'} ) {
 					$script->{'user_map'}->{ $_->{'curator'} },
 					$_->{'datestamp'}
 				);
+				$allele_seq_sql->execute( $sequence_map{ $_->{'seqbin_id'} }, $_->{'locus'}, $_->{'start_pos'}, $_->{'end_pos'} );
+				my $new_id = $allele_seq_sql->fetchrow_array;
+				if ($new_id) {
+					$allele_sequence_map{ $_->{'id'} } = $new_id;
+				}
 			};
 			if ($@) {
 				$script->{'db2'}->{ $opts{'b'} }->rollback;
 				die "$@\n" if $@;
-				$opts{'throw_busy_exception'} = 1;
 			}
 		} else {
 			print "Locus $_->{'locus'} not in destination - skipping.\n" if !$opts{'q'};
 		}
 	}
-	my $flags =
-	  $script->{'datastore'}->run_list_query_hashref(
-		"SELECT sequence_flags.* FROM sequence_flags LEFT JOIN sequence_bin ON seqbin_id = sequence_bin.id WHERE isolate_id=?", $i );
-	$sql =
-	  $script->{'db2'}->{ $opts{'b'} }
-	  ->prepare("INSERT INTO sequence_flags (seqbin_id, locus, start_pos, end_pos, flag, curator, datestamp) VALUES (?,?,?,?,?,?,?)");
+	my $flags = $script->{'datastore'}->run_list_query_hashref(
+		"SELECT allele_sequences.*,sequence_flags.* FROM sequence_flags LEFT JOIN allele_sequences ON sequence_flags.id = "
+		  . "allele_sequences.id WHERE isolate_id=?",
+		$i
+	);
+	$sql = $script->{'db2'}->{ $opts{'b'} }->prepare("INSERT INTO sequence_flags (id, flag, curator, datestamp) VALUES (?,?,?,?)");
+	my $sql2 =
+	  $script->{'db2'}->{ $opts{'b'} }->prepare("SELECT id FROM allele_sequences WHERE (seqbin_id,locus,start_pos,end_pos) = (?,?,?,?)");
 	foreach (@$flags) {
 		if ( $script->is_locus_in_destination( $_->{'locus'} ) ) {
 			eval {
 				$sql->execute(
-					$sequence_map{ $_->{'seqbin_id'} },
-					$_->{'locus'}, $_->{'start_pos'}, $_->{'end_pos'}, $_->{'flag'}, $script->{'user_map'}->{ $_->{'curator'} },
+					$allele_sequence_map{ $_->{'id'} },
+					$_->{'flag'}, $script->{'user_map'}->{ $_->{'curator'} },
 					$_->{'datestamp'}
 				);
 			};

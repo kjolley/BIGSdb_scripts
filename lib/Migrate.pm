@@ -145,12 +145,8 @@ sub get_missing_designation_users_in_destination {
 	my $senders = $self->{'datastore'}->run_list_query( "SELECT DISTINCT sender FROM allele_designations WHERE isolate_id=?", $isolate_id );
 	my $curators =
 	  $self->{'datastore'}->run_list_query( "SELECT DISTINCT curator FROM allele_designations WHERE isolate_id=?", $isolate_id );
-	my $senders2 =
-	  $self->{'datastore'}->run_list_query( "SELECT DISTINCT sender FROM pending_allele_designations WHERE isolate_id=?", $isolate_id );
-	my $curators2 =
-	  $self->{'datastore'}->run_list_query( "SELECT DISTINCT curator FROM pending_allele_designations WHERE isolate_id=?", $isolate_id );
 	my %bad_users;
-	foreach ( uniq( @$senders, @$curators, @$senders2, @$curators2 ) ) {
+	foreach ( uniq( @$senders, @$curators ) ) {
 		my $user_info = $self->{'datastore'}->get_user_info($_);
 		$bad_users{$_} = "$user_info->{'surname'}, $user_info->{'first_name'}" if !defined $self->{'user_map'}->{$_};
 	}
@@ -329,7 +325,7 @@ sub clone_locus {
 sub isolate_exists_in_destination {
 	my ( $self, $isolate_id ) = @_;
 	my $exists =
-	  $self->run_simple_query( $self->{'options'}->{'b'}, "SELECT COUNT(*) FROM $self->{'system'}->{'view'} WHERE id=?", $isolate_id )->[0];
+	  $self->run_simple_query( $self->{'options'}->{'b'}, "SELECT COUNT(*) FROM isolates WHERE id=?", $isolate_id )->[0];
 	return $exists;
 }
 
