@@ -77,7 +77,8 @@ sub _map_users {
 
 	#Map users based on first and surnames.
 	my ($self) = @_;
-	my $db1_users = $self->{'datastore'}->run_list_query_hashref("SELECT * FROM users ORDER BY id");
+	my $db1_users =
+	  $self->{'datastore'}->run_query( "SELECT * FROM users ORDER BY id", undef, { fetch => 'all_arrayref', slice => {} } );
 	my $sql =
 	  $self->{'db2'}->{ $self->{'options'}->{'b'} }->prepare("SELECT id, user_name FROM users WHERE first_name = ? AND surname = ?");
 	my $map;
@@ -324,8 +325,7 @@ sub clone_locus {
 
 sub isolate_exists_in_destination {
 	my ( $self, $isolate_id ) = @_;
-	my $exists =
-	  $self->run_simple_query( $self->{'options'}->{'b'}, "SELECT COUNT(*) FROM isolates WHERE id=?", $isolate_id )->[0];
+	my $exists = $self->run_simple_query( $self->{'options'}->{'b'}, "SELECT COUNT(*) FROM isolates WHERE id=?", $isolate_id )->[0];
 	return $exists;
 }
 

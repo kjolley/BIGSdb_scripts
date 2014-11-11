@@ -66,8 +66,8 @@ sub print_header {
 		undef $script;
 		exit;
 	}
-	my $loci          = $script->{'datastore'}->get_scheme_loci($scheme_id);
-	if ($opts{'p'}){
+	my $loci = $script->{'datastore'}->get_scheme_loci($scheme_id);
+	if ( $opts{'p'} ) {
 		s/^$opts{'p'}// foreach @$loci;
 	}
 	my $scheme_fields = $script->{'datastore'}->get_scheme_fields($scheme_id);
@@ -89,27 +89,29 @@ sub print_scheme {
 	my $matview =
 	  $script->{'datastore'}->run_simple_query( "SELECT EXISTS(SELECT 1 FROM matviews WHERE v_name=?)", "scheme_$scheme_id" )->[0];
 	my $view = $matview ? "mv_scheme_$scheme_id" : "scheme_$scheme_id";
-	my $profiles =
-	  $script->{'datastore'}->run_list_query_hashref("SELECT * FROM $view ORDER BY CAST($scheme_info->{'primary_key'} AS INT)");
+	my $profiles = $script->{'datastore'}->run_query( "SELECT * FROM $view ORDER BY CAST($scheme_info->{'primary_key'} AS INT)",
+		undef, { fetch => 'all_arrayref', slice => {} } );
 	my ( $isolates_sql, $species_sql );
 
 	if ( $opts{'b'} ) {
+
 		#Check species field exists
-		my $check_sql = $script->{'dbi'}->prepare("SELECT EXISTS(SELECT * FROM information_schema.columns WHERE "
-		  . "table_name='isolates' AND column_name='species')");
-		eval {$check_sql->execute};
+		my $check_sql =
+		  $script->{'dbi'}
+		  ->prepare( "SELECT EXISTS(SELECT * FROM information_schema.columns WHERE " . "table_name='isolates' AND column_name='species')" );
+		eval { $check_sql->execute };
 		$script->{'logger'}->error($@) if $@;
 		my ($field_exists) = $check_sql->fetchrow_array;
-		if (!$field_exists){
+		if ( !$field_exists ) {
 			delete $opts{'b'};
-		} else {	
+		} else {
 			my $locus_count = @$loci;
-			my $qry         = "SELECT isolates.id FROM isolates LEFT JOIN allele_designations ON "
-			  . "isolates.id=allele_designations.isolate_id WHERE ";
+			my $qry =
+			  "SELECT isolates.id FROM isolates LEFT JOIN allele_designations ON " . "isolates.id=allele_designations.isolate_id WHERE ";
 			my @locus_clause;
 			foreach my $locus (@$loci) {
 				my $cleaned_locus = $locus;
-				if ($opts{'p'}){
+				if ( $opts{'p'} ) {
 					$cleaned_locus =~ s/^$opts{'p'}//;
 				}
 				push @locus_clause, "(locus='$cleaned_locus' AND allele_id=?)";
@@ -121,9 +123,9 @@ sub print_scheme {
 		}
 	}
 	my %ignore_species;
-	if ($opts{'N'}){
-		my @ignore = split ',',$opts{'N'};
-		%ignore_species = map { $_ => 1} @ignore;
+	if ( $opts{'N'} ) {
+		my @ignore = split ',', $opts{'N'};
+		%ignore_species = map { $_ => 1 } @ignore;
 	}
 	foreach my $profile (@$profiles) {
 		print $profile->{ lc( $scheme_info->{'primary_key'} ) };
@@ -146,11 +148,11 @@ sub print_scheme {
 				eval { $species_sql->execute($id) };
 				$script->{'logger'}->error($@) if $@;
 				my ($species) = $species_sql->fetchrow_array // '';
-				if ($opts{'g'}){
-					my $initial = substr($opts{'g'},0,1);
+				if ( $opts{'g'} ) {
+					my $initial = substr( $opts{'g'}, 0, 1 );
 					$species =~ s/^$initial\./$opts{'g'}/;
 				}
-				$species =~ s/ or .*$//; #Special case of alternative names in Aeromonas
+				$species =~ s/ or .*$//;    #Special case of alternative names in Aeromonas
 				$species_count{$species}++ if $species && !$ignore_species{$species};
 			}
 			my @species_names = sort { $species_count{$b} <=> $species_count{$a} } keys %species_count;

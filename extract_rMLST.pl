@@ -13,7 +13,7 @@ use constant {
 	PORT             => 5432,
 	USER             => 'apache',
 	PASSWORD         => 'remote',
-	CACHE_DIR	     => '/var/tmp/rMLST'
+	CACHE_DIR        => '/var/tmp/rMLST'
 };
 #######End Local configuration###############################
 use lib (LIB_DIR);
@@ -23,7 +23,6 @@ use Bio::DB::GenBank;
 use Bio::SeqIO;
 use BIGSdb::Offline::Script;
 use BIGSdb::Utils;
-
 my %opts;
 getopts( 'd:f:l:x:y:achs', \%opts );
 
@@ -61,22 +60,21 @@ if ( $opts{'s'} ) {
 	exit;
 }
 my $retrieved = 0;
-my $prefix = BIGSdb::Utils::get_random();
-my $i = 0;
-
+my $prefix    = BIGSdb::Utils::get_random();
+my $i         = 0;
 foreach my $record (@$data) {
 	$i++;
-	next if BIGSdb::Utils::is_int($opts{'x'}) && $i < $opts{'x'};
+	next if BIGSdb::Utils::is_int( $opts{'x'} ) && $i < $opts{'x'};
 	my $accession_list = $record->{'accessions'};
-	my $isolate_id = ($record->{'isolate_id'} =~ /(.*)/) ? $1: undef; #untaint
-	my $seq_file = CACHE_DIR . "/$isolate_id";
-	if (!$opts{'a'} && (!-e $seq_file || !-s $seq_file)) {
-		last if $opts{'l'} && BIGSdb::Utils::is_int($opts{'l'}) && $opts{'l'} <= $retrieved;
-		sleep 60;   #Let's not annoy NCBI.
+	my $isolate_id     = ( $record->{'isolate_id'} =~ /(.*)/ ) ? $1 : undef;    #untaint
+	my $seq_file       = CACHE_DIR . "/$isolate_id";
+	if ( !$opts{'a'} && ( !-e $seq_file || !-s $seq_file ) ) {
+		last if $opts{'l'} && BIGSdb::Utils::is_int( $opts{'l'} ) && $opts{'l'} <= $retrieved;
+		sleep 60;                                                               #Let's not annoy NCBI.
 		foreach my $accession (@$accession_list) {
 			my $seq_obj;
 			my $seq_db = Bio::DB::GenBank->new;
-			$seq_db->verbose(2);    #convert warn to exception
+			$seq_db->verbose(2);                                                #convert warn to exception
 			try {
 				$seq_obj = $seq_db->get_Seq_by_acc($accession);
 			}
@@ -84,7 +82,7 @@ foreach my $record (@$data) {
 				my $err = shift;
 				die "No data returned for accession number $accession. $err\n";
 			};
-			open (my $acc_fh,'>>', $seq_file) || die "Cannot open $seq_file for appending";
+			open( my $acc_fh, '>>', $seq_file ) || die "Cannot open $seq_file for appending";
 			say $acc_fh ">" . $seq_obj->id;
 			say $acc_fh $seq_obj->seq;
 			close $acc_fh;
@@ -92,20 +90,18 @@ foreach my $record (@$data) {
 		}
 		$retrieved++;
 	}
-	
 	next if $opts{'c'};
 	next if $opts{'a'} && !-e $seq_file;
-	
-	foreach my $locus (@$loci){
-		my $ref_seq_file = create_locus_FASTA_db($locus, $prefix);
+	foreach my $locus (@$loci) {
+		my $ref_seq_file = create_locus_FASTA_db( $locus, $prefix );
 		my $out_file = "$script->{'config'}->{'secure_tmp_dir'}/$prefix\_isolate_$isolate_id\_outfile.txt";
 		blast( 15, $isolate_id, $ref_seq_file, $out_file );
 		my $match = parse_blast( $locus, $out_file );
-		my $extracted_seq = extract_sequence($isolate_id,$match) // '';
+		my $extracted_seq = extract_sequence( $isolate_id, $match ) // '';
 		$script->{'logger'}->error("$isolate_id $locus missing.") if !$extracted_seq;
 		say "$isolate_id\t$locus\t$extracted_seq";
 	}
-	last if BIGSdb::Utils::is_int($opts{'y'}) && $i >= $opts{'y'};
+	last if BIGSdb::Utils::is_int( $opts{'y'} ) && $i >= $opts{'y'};
 }
 
 sub read_data_file {
@@ -127,7 +123,7 @@ sub read_data_file {
 sub parse_blast {
 
 	#return best match
-	my ($locus, $blast_file ) = @_;
+	my ( $locus, $blast_file ) = @_;
 	my $identity  = 70;
 	my $alignment = 50;
 	my $match;
@@ -150,7 +146,9 @@ sub parse_blast {
 				};
 				die "$@\n" if $@;
 			} else {
-				my $seq = $script->{'datastore'}->run_simple_query("SELECT sequence FROM sequences WHERE locus=? AND allele_id=?", $locus, $record[1])->[0];
+				my $seq =
+				  $script->{'datastore'}
+				  ->run_simple_query( "SELECT sequence FROM sequences WHERE locus=? AND allele_id=?", $locus, $record[1] )->[0];
 				$lengths{ $record[1] } = length($seq);
 			}
 		}
@@ -159,17 +157,17 @@ sub parse_blast {
 		if (   ( !$match->{'exact'} && $record[2] == 100 && $record[3] == $length )
 			|| ( $this_quality > $quality && $record[3] > $alignment * 0.01 * $length && $record[2] >= $identity ) )
 		{
-
 			#Always score exact match higher than a longer partial match
 			next if $match->{'exact'} && !( $record[2] == 100 && $record[3] == $length );
 			$quality              = $this_quality;
-			$match->{'seq_id'} = $record[0];
+			$match->{'seq_id'}    = $record[0];
 			$match->{'allele'}    = $record[1];
 			$match->{'identity'}  = $record[2];
 			$match->{'length'}    = $length;
 			$match->{'alignment'} = $record[3];
 			$match->{'start'}     = $record[6];
 			$match->{'end'}       = $record[7];
+
 			if ( ( $record[8] > $record[9] && $record[7] > $record[6] ) || ( $record[8] < $record[9] && $record[7] < $record[6] ) ) {
 				$match->{'reverse'} = 1;
 			} else {
@@ -209,8 +207,7 @@ sub blast {
 	die "Isolate FASTA file does not exist for $isolate_id.\n" if !-e $fasta_file;
 	system(
 "$script->{'config'}->{'blast+_path'}/blastn -max_target_seqs 10 -parse_deflines -word_size $word_size -db $fasta_file -query $in_file -out $out_file -outfmt 6 -dust no"
-		);
-
+	);
 	return;
 }
 
@@ -225,8 +222,11 @@ sub create_locus_FASTA_db {
 	if ( !-e $temp_fastafile ) {
 		my $locus_info = $script->{'datastore'}->get_locus_info($locus);
 		my $file_buffer;
-		my $seqs_ref = $script->{'datastore'}->run_list_query_hashref("SELECT allele_id,sequence FROM sequences WHERE locus=?", $locus);
-		foreach ( @$seqs_ref ) {
+		my $seqs_ref =
+		  $script->{'datastore'}
+		  ->run_query( "SELECT allele_id,sequence FROM sequences WHERE locus=?", $locus, { fetch => 'all_arrayref', slice => {} } )
+		  ;
+		foreach (@$seqs_ref) {
 			next if !length $_->{'sequence'};
 			$file_buffer .= ">$_->{'allele_id'}\n$_->{'sequence'}\n";
 		}
@@ -249,13 +249,13 @@ sub extract_sequence {
 		$start = $end;
 	}
 	my $fasta_file = CACHE_DIR . "/$isolate_id";
-	my $in  = Bio::SeqIO->new( -file => $fasta_file,      -format => 'fasta' );
+	my $in = Bio::SeqIO->new( -file => $fasta_file, -format => 'fasta' );
 	while ( my $seq_obj = $in->next_seq ) {
-		my $id  = $seq_obj->primary_id;
+		my $id = $seq_obj->primary_id;
 		next if $id ne $match->{'seq_id'};
 		my $seq = $seq_obj->primary_seq->seq;
-		my $extracted = substr($seq, $start - 1, $length);
-		$extracted = BIGSdb::Utils::reverse_complement( $extracted) if $match->{'reverse'};
+		my $extracted = substr( $seq, $start - 1, $length );
+		$extracted = BIGSdb::Utils::reverse_complement($extracted) if $match->{'reverse'};
 		return $extracted;
 	}
 	return '';

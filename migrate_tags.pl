@@ -83,7 +83,8 @@ if ( keys %$missing_users ) {
 }
 if ( !$opts{'n'} ) {
 	my $designations =
-	  $script->{'datastore'}->run_list_query_hashref( "SELECT * FROM allele_designations WHERE isolate_id=? ORDER BY locus", $i );
+	  $script->{'datastore'}
+	  ->run_query( "SELECT * FROM allele_designations WHERE isolate_id=? ORDER BY locus", $i, { fetch => 'all_arrayref', slice => {} } );
 	my $sql =
 	  $script->{'db2'}->{ $opts{'b'} }->prepare( "INSERT INTO allele_designations (isolate_id,locus,allele_id,sender,status,method,"
 		  . "curator,date_entered,datestamp,comments) VALUES (?,?,?,?,?,?,?,?,?,?)" );
@@ -105,7 +106,9 @@ if ( !$opts{'n'} ) {
 		}
 	}
 }
-my $sequences = $script->{'datastore'}->run_list_query_hashref( "SELECT * FROM sequence_bin WHERE isolate_id=? ORDER BY id", $i );
+my $sequences =
+  $script->{'datastore'}
+  ->run_query( "SELECT * FROM sequence_bin WHERE isolate_id=? ORDER BY id", $i, { fetch => 'all_arrayref', slice => {} } );
 my $sql =
   $script->{'db2'}->{ $opts{'b'} }->prepare( "INSERT INTO sequence_bin (id,isolate_id,sequence,method,original_designation,comments,"
 	  . "sender,curator,date_entered,datestamp) VALUES (?,?,?,?,?,?,?,?,?,?)" );
@@ -132,7 +135,8 @@ foreach (@$sequences) {
 }
 if ( !$opts{'n'} ) {
 	my $allele_sequences =
-	  $script->{'datastore'}->run_list_query_hashref( "SELECT allele_sequences.* FROM allele_sequences WHERE isolate_id=?", $i );
+	  $script->{'datastore'}
+	  ->run_query( "SELECT allele_sequences.* FROM allele_sequences WHERE isolate_id=?", $i, { fetch => 'all_arrayref', slice => {} } );
 	$sql =
 	  $script->{'db2'}->{ $opts{'b'} }->prepare( "INSERT INTO allele_sequences (seqbin_id,locus,start_pos,end_pos,reverse,complete,curator,"
 		  . "datestamp) VALUES (?,?,?,?,?,?,?,?)" );
@@ -161,10 +165,10 @@ if ( !$opts{'n'} ) {
 			print "Locus $_->{'locus'} not in destination - skipping.\n" if !$opts{'q'};
 		}
 	}
-	my $flags = $script->{'datastore'}->run_list_query_hashref(
+	my $flags = $script->{'datastore'}->run_query(
 		"SELECT allele_sequences.*,sequence_flags.* FROM sequence_flags LEFT JOIN allele_sequences ON sequence_flags.id = "
 		  . "allele_sequences.id WHERE isolate_id=?",
-		$i
+		$i, { fetch => 'all_arrayref', slice => {} }
 	);
 	$sql = $script->{'db2'}->{ $opts{'b'} }->prepare("INSERT INTO sequence_flags (id, flag, curator, datestamp) VALUES (?,?,?,?)");
 	my $sql2 =
