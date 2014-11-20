@@ -162,6 +162,7 @@ sub print_scheme {
 		$species_name ||= $opts{'n'} // '';
 		print "\t$species_name\n";
 	}
+	return;
 }
 
 sub initiate_isolate_db {
@@ -178,6 +179,7 @@ sub initiate_isolate_db {
 	}
 	my $system_hash = $xml_handler->get_system_hash;
 	$script->{'dbi'} = $script->{'dataConnector'}->get_connection( { dbase_name => $system_hash->{'db'} } );
+	return;
 }
 
 sub show_help {
