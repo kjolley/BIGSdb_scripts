@@ -1,6 +1,6 @@
 #!/usr/bin/perl -T
 #Extract rMLST alleles for genomes with Genbank accessions
-#Written by Keith Jolley, 2012.
+#Written by Keith Jolley, 2012-2015.
 use strict;
 use warnings;
 use 5.010;
@@ -52,8 +52,8 @@ die "Database $opts{'d'} does not exist!\n" if !$script->{'db'};
 die "Must be a seqdef database!\n" if ( $script->{'system'}->{'dbtype'} // '' ) ne 'sequences';
 my $data = read_data_file( $opts{'f'} );
 my $loci =
-  $script->{'datastore'}
-  ->run_list_query( "SELECT id FROM loci WHERE id IN (SELECT locus FROM scheme_members WHERE scheme_id=?) ORDER BY id", 1 );
+  $script->{'datastore'}->run_query( "SELECT id FROM loci WHERE id IN (SELECT locus FROM scheme_members WHERE scheme_id=?) ORDER BY id",
+	1, { fetch => 'col_arrayref' } );
 if ( $opts{'s'} ) {
 	say @$loci . " loci";
 	say @$data . " records";
@@ -224,8 +224,7 @@ sub create_locus_FASTA_db {
 		my $file_buffer;
 		my $seqs_ref =
 		  $script->{'datastore'}
-		  ->run_query( "SELECT allele_id,sequence FROM sequences WHERE locus=?", $locus, { fetch => 'all_arrayref', slice => {} } )
-		  ;
+		  ->run_query( "SELECT allele_id,sequence FROM sequences WHERE locus=?", $locus, { fetch => 'all_arrayref', slice => {} } );
 		foreach (@$seqs_ref) {
 			next if !length $_->{'sequence'};
 			$file_buffer .= ">$_->{'allele_id'}\n$_->{'sequence'}\n";

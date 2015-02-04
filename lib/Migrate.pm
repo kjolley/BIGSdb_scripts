@@ -1,6 +1,6 @@
 #Migration of data between BIGSdb databases
 #Written by Keith Jolley
-#Copyright (c) 2011, University of Oxford
+#Copyright (c) 2011-2015, University of Oxford
 package BIGSdb_Scripts::Migrate;
 use strict;
 use warnings;
@@ -77,8 +77,7 @@ sub _map_users {
 
 	#Map users based on first and surnames.
 	my ($self) = @_;
-	my $db1_users =
-	  $self->{'datastore'}->run_query( "SELECT * FROM users ORDER BY id", undef, { fetch => 'all_arrayref', slice => {} } );
+	my $db1_users = $self->{'datastore'}->run_query( "SELECT * FROM users ORDER BY id", undef, { fetch => 'all_arrayref', slice => {} } );
 	my $sql =
 	  $self->{'db2'}->{ $self->{'options'}->{'b'} }->prepare("SELECT id, user_name FROM users WHERE first_name = ? AND surname = ?");
 	my $map;
@@ -113,12 +112,13 @@ sub _get_missing_curator_in_locus_tables {
 	my %bad_users;
 	my @list;
 	foreach my $table (qw (loci locus_extended_attributes locus_aliases locus_descriptions locus_links locus_refs locus_curators)) {
-		my $curators = $self->{'datastore'}->run_list_query(
+		my $curators = $self->{'datastore'}->run_query(
 			"SELECT DISTINCT "
 			  . ( $table eq 'locus_curators' ? 'curator_id' : 'curator' )
 			  . " FROM $table WHERE "
 			  . ( $table eq 'loci' ? 'id' : 'locus' ) . "=?",
-			$locus
+			$locus,
+			{ fetch => 'col_arrayref' }
 		);
 		push @list, @$curators;
 	}
@@ -131,8 +131,10 @@ sub _get_missing_curator_in_locus_tables {
 
 sub get_missing_allele_seq_users_in_destination {
 	my ( $self, $locus ) = @_;
-	my $senders  = $self->{'datastore'}->run_list_query( "SELECT DISTINCT sender FROM sequences WHERE locus=?",  $locus );
-	my $curators = $self->{'datastore'}->run_list_query( "SELECT DISTINCT curator FROM sequences WHERE locus=?", $locus );
+	my $senders =
+	  $self->{'datastore'}->run_query( "SELECT DISTINCT sender FROM sequences WHERE locus=?", $locus, { fetch => 'col_arrayref' } );
+	my $curators =
+	  $self->{'datastore'}->run_query( "SELECT DISTINCT curator FROM sequences WHERE locus=?", $locus, { fetch => 'col_arrayref' } );
 	my %bad_users;
 	foreach ( uniq( @$senders, @$curators ) ) {
 		my $user_info = $self->{'datastore'}->get_user_info($_);
@@ -143,9 +145,13 @@ sub get_missing_allele_seq_users_in_destination {
 
 sub get_missing_designation_users_in_destination {
 	my ( $self, $isolate_id ) = @_;
-	my $senders = $self->{'datastore'}->run_list_query( "SELECT DISTINCT sender FROM allele_designations WHERE isolate_id=?", $isolate_id );
+	my $senders =
+	  $self->{'datastore'}
+	  ->run_query( "SELECT DISTINCT sender FROM allele_designations WHERE isolate_id=?", $isolate_id, { fetch => 'col_arrayref' } );
 	my $curators =
-	  $self->{'datastore'}->run_list_query( "SELECT DISTINCT curator FROM allele_designations WHERE isolate_id=?", $isolate_id );
+	  $self->{'datastore'}
+	  ->run_query( "SELECT DISTINCT curator FROM allele_designations WHERE isolate_id=?", $isolate_id, { fetch => 'col_arrayref' } )
+	  ;
 	my %bad_users;
 	foreach ( uniq( @$senders, @$curators ) ) {
 		my $user_info = $self->{'datastore'}->get_user_info($_);
