@@ -148,7 +148,7 @@ sub parse_blast {
 			} else {
 				my $seq =
 				  $script->{'datastore'}
-				  ->run_simple_query( "SELECT sequence FROM sequences WHERE locus=? AND allele_id=?", $locus, $record[1] )->[0];
+				  ->run_query( "SELECT sequence FROM sequences WHERE locus=? AND allele_id=?", [$locus, $record[1]] );
 				$lengths{ $record[1] } = length($seq);
 			}
 		}

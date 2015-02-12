@@ -1,7 +1,7 @@
 #!/usr/bin/perl -T
 #Generate tab-delimited text file of MLST profiles including a
 #a column for species
-#Written by Keith Jolley 2014
+#Written by Keith Jolley 2014-2015
 use strict;
 use warnings;
 use 5.010;
@@ -86,8 +86,7 @@ sub print_scheme {
 	my $scheme_info   = $script->{'datastore'}->get_scheme_info( $scheme_id, { get_pk => 1 } );
 	my $loci          = $script->{'datastore'}->get_scheme_loci($scheme_id);
 	my $scheme_fields = $script->{'datastore'}->get_scheme_fields($scheme_id);
-	my $matview =
-	  $script->{'datastore'}->run_simple_query( "SELECT EXISTS(SELECT 1 FROM matviews WHERE v_name=?)", "scheme_$scheme_id" )->[0];
+	my $matview = $script->{'datastore'}->run_query( "SELECT EXISTS(SELECT 1 FROM matviews WHERE v_name=?)", "scheme_$scheme_id" );
 	my $view = $matview ? "mv_scheme_$scheme_id" : "scheme_$scheme_id";
 	my $profiles = $script->{'datastore'}->run_query( "SELECT * FROM $view ORDER BY CAST($scheme_info->{'primary_key'} AS INT)",
 		undef, { fetch => 'all_arrayref', slice => {} } );
