@@ -69,10 +69,13 @@ die "Source isolate id must be an integer.\n"                   if !BIGSdb::Util
 die "Destination isolate id must be an integer.\n"              if !BIGSdb::Utils::is_int($j);
 die "Isolate id does not exist in source database.\n" if !$script->isolate_exists_in_source($i);
 die "Isolate id does not exist in destination database.\n" if !$script->isolate_exists_in_destination($j);
-my $seqs_exist_in_destination = $script->run_simple_query( $opts{'b'}, "SELECT COUNT(*) FROM sequence_bin WHERE isolate_id=?", $j )->[0];
+my $seqs_exist_in_destination =
+  $script->{'datastore'}
+  ->run_query( "SELECT EXISTS(SELECT * FROM sequence_bin WHERE isolate_id=?)", $j, { db => $script->{'db2'}->{ $opts{'b'} } } );
 die "Isolate in destination database already has sequences associated with record.\n" if $seqs_exist_in_destination;
 my $designations_exist_in_destination =
-  $script->run_simple_query( $opts{'b'}, "SELECT COUNT(*) FROM allele_designations WHERE isolate_id=?", $j )->[0];
+  $script->{'datastore'}
+  ->run_query( "SELECT EXISTS(SELECT * FROM allele_designations WHERE isolate_id=?)", $j, { db => $script->{'db2'}->{ $opts{'b'} } } );
 die "Isolate in destination database already has allele designations set.\n" if $designations_exist_in_destination && !$opts{'n'};
 my $missing_users = $script->get_missing_designation_users_in_destination($i);
 
@@ -168,7 +171,8 @@ if ( !$opts{'n'} ) {
 	my $flags = $script->{'datastore'}->run_query(
 		"SELECT allele_sequences.*,sequence_flags.* FROM sequence_flags LEFT JOIN allele_sequences ON sequence_flags.id = "
 		  . "allele_sequences.id WHERE isolate_id=?",
-		$i, { fetch => 'all_arrayref', slice => {} }
+		$i,
+		{ fetch => 'all_arrayref', slice => {} }
 	);
 	$sql = $script->{'db2'}->{ $opts{'b'} }->prepare("INSERT INTO sequence_flags (id, flag, curator, datestamp) VALUES (?,?,?,?)");
 	my $sql2 =

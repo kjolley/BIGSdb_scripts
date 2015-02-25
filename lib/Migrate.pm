@@ -62,17 +62,6 @@ sub _db_connect {
 	return;
 }
 
-sub run_simple_query {
-
-	#runs simple query (single row returned) against current database
-	my ( $self, $db_name, $qry, @values ) = @_;
-	my $sql = $self->{'db2'}->{$db_name}->prepare($qry);
-	eval { $sql->execute(@values) };
-	$self->{'logger'}->error("$qry $@") if $@;
-	my $data = $sql->fetchrow_arrayref;
-	return $data;
-}
-
 sub _map_users {
 
 	#Map users based on first and surnames.
@@ -97,13 +86,16 @@ sub get_db_types {
 
 sub locus_exists_in_destination {
 	my ( $self, $locus ) = @_;
-	my $exists = $self->run_simple_query( $self->{'options'}->{'b'}, "SELECT COUNT(*) FROM loci WHERE id=?", $locus )->[0];
+	my $exists = $self->{'datastore'}->run_query( "SELECT EXISTS(SELECT * FROM loci WHERE id=?)",
+		$locus, { db => $self->{'db2'}->{ $self->{'options'}->{'b'} }, cache => 'Migrate::locus_exisgts_in_destination' } );
 	return $exists;
 }
 
 sub locus_exists_in_source {
 	my ( $self, $locus ) = @_;
-	my $exists = $self->{'datastore'}->run_simple_query( "SELECT COUNT(*) FROM loci WHERE id=?", $locus )->[0];
+	my $exists =
+	  $self->{'datastore'}
+	  ->run_query( "SELECT EXISTS(SELECT * FROM loci WHERE id=?)", $locus, { cache => 'Migrate::locus_exists_in_source' } );
 	return $exists;
 }
 
@@ -150,8 +142,7 @@ sub get_missing_designation_users_in_destination {
 	  ->run_query( "SELECT DISTINCT sender FROM allele_designations WHERE isolate_id=?", $isolate_id, { fetch => 'col_arrayref' } );
 	my $curators =
 	  $self->{'datastore'}
-	  ->run_query( "SELECT DISTINCT curator FROM allele_designations WHERE isolate_id=?", $isolate_id, { fetch => 'col_arrayref' } )
-	  ;
+	  ->run_query( "SELECT DISTINCT curator FROM allele_designations WHERE isolate_id=?", $isolate_id, { fetch => 'col_arrayref' } );
 	my %bad_users;
 	foreach ( uniq( @$senders, @$curators ) ) {
 		my $user_info = $self->{'datastore'}->get_user_info($_);
@@ -162,13 +153,16 @@ sub get_missing_designation_users_in_destination {
 
 sub is_locus_in_scheme {
 	my ( $self, $locus ) = @_;
-	my $in_scheme = $self->{'datastore'}->run_simple_query( "SELECT COUNT(*) FROM scheme_members WHERE locus=?", $locus )->[0];
+	my $in_scheme =
+	  $self->{'datastore'}
+	  ->run_query( "SELECT EXISTS(SELECT * FROM scheme_members WHERE locus=?)", $locus, { cache => 'Migrate::is_locus_in_scheme' } );
 	return $in_scheme;
 }
 
 sub is_locus_in_destination {
 	my ( $self, $locus ) = @_;
-	my $in_destination = $self->run_simple_query( $self->{'options'}->{'b'}, "SELECT COUNT(*) FROM loci WHERE id=?", $locus )->[0];
+	my $in_destination = $self->{'datastore'}->run_query( "SELECT EXISTS(SELECT * FROM loci WHERE id=?)",
+		$locus, { db => $self->{'db2'}->{ $self->{'options'}->{'b'} }, cache => 'Migrate::is_locus_in_destination' } );
 	return $in_destination;
 }
 
@@ -331,13 +325,15 @@ sub clone_locus {
 
 sub isolate_exists_in_destination {
 	my ( $self, $isolate_id ) = @_;
-	my $exists = $self->run_simple_query( $self->{'options'}->{'b'}, "SELECT COUNT(*) FROM isolates WHERE id=?", $isolate_id )->[0];
+	my $exists = $self->{'datastore'}->run_query( "SELECT EXISTS(SELECT * FROM isolates WHERE id=?)",
+		$isolate_id, { db => $self->{'db2'}->{ $self->{'options'}->{'b'} }, cache => 'Migrate::isolate_exists_in_destination' } );
 	return $exists;
 }
 
 sub isolate_exists_in_source {
 	my ( $self, $isolate_id ) = @_;
-	my $exists = $self->{'datastore'}->run_simple_query( "SELECT COUNT(*) FROM $self->{'system'}->{'view'} WHERE id=?", $isolate_id )->[0];
+	my $exists = $self->{'datastore'}->run_query( "SELECT EXISTS(SELECT * FROM $self->{'system'}->{'view'} WHERE id=?)",
+		$isolate_id, { cache => 'Migrate::isolate_exists_in_source' } );
 	return $exists;
 }
 
