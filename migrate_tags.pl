@@ -1,7 +1,7 @@
 #!/usr/bin/perl -T
 #Move sequences, designations and tags between BIGSdb databases
 #Corresponding isolate records need to exist in both databases prior to migration.
-#Written by Keith Jolley 2011-2014
+#Written by Keith Jolley 2011-2015
 use strict;
 use warnings;
 use 5.010;
@@ -13,7 +13,7 @@ use constant {
 	HOST             => 'localhost',
 	PORT             => 5432,
 	USER             => 'apache',
-	PASSWORD         => ''
+	PASSWORD         => undef
 };
 #######End Local configuration###############################
 use lib (LIB_DIR);

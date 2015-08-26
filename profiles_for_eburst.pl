@@ -1,7 +1,7 @@
 #!/usr/bin/perl -T
 #Generate tab-delimited text file of MLST profiles including a
 #a column for ST
-#Written by Keith Jolley 2014
+#Written by Keith Jolley 2014-2015
 use strict;
 use warnings;
 use 5.010;
@@ -13,7 +13,7 @@ use constant {
 	HOST             => 'zoo-oban',
 	PORT             => 5432,
 	USER             => 'apache',
-	PASSWORD         => ''
+	PASSWORD         => undef
 };
 #######End Local configuration###############################
 use lib (LIB_DIR);

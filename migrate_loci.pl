@@ -1,6 +1,6 @@
 #!/usr/bin/perl -T
 #Move loci between BIGSdb databases
-#Written by Keith Jolley 2011-2012
+#Written by Keith Jolley 2011-2015
 use strict;
 use warnings;
 
@@ -12,7 +12,7 @@ use constant {
 	HOST             => 'localhost',
 	PORT             => 5432,
 	USER             => 'apache',
-	PASSWORD         => ''
+	PASSWORD         => undef
 };
 #######End Local configuration###############################
 

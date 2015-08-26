@@ -9,10 +9,10 @@ use constant {
 	CONFIG_DIR       => '/etc/bigsdb',
 	LIB_DIR          => '/usr/local/lib',
 	DBASE_CONFIG_DIR => '/etc/bigsdb/dbases',
-	HOST             => 'zoo-oban.zoo.ox.ac.uk',
+	HOST             => 'localhost',
 	PORT             => 5432,
 	USER             => 'apache',
-	PASSWORD         => 'remote',
+	PASSWORD         => undef,
 	CACHE_DIR        => '/var/tmp/rMLST'
 };
 #######End Local configuration###############################

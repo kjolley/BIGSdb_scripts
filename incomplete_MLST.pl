@@ -1,6 +1,6 @@
 #!/usr/bin/perl -T
 #List isolates with incomplete profiles and predict clonal complex
-#Written by Keith Jolley 2011
+#Written by Keith Jolley 2011-2015
 use strict;
 use warnings;
 ###########Local configuration################################
@@ -11,7 +11,7 @@ use constant {
 	HOST             => 'localhost',
 	PORT             => 5432,
 	USER             => 'apache',
-	PASSWORD         => ''
+	PASSWORD         => undef
 };
 #######End Local configuration###############################
 use lib (LIB_DIR);

@@ -13,7 +13,7 @@ use constant {
 	HOST             => 'zoo-oban',
 	PORT             => 5432,
 	USER             => 'apache',
-	PASSWORD         => ''
+	PASSWORD         => undef
 };
 #######End Local configuration###############################
 use lib (LIB_DIR);
