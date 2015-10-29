@@ -193,6 +193,13 @@ if ( !$opts{'n'} ) {
 		}
 	}
 }
+eval {
+	$script->{'db2'}->{ $opts{'b'} }->do(q(SELECT setval('sequence_bin_id_seq',(SELECT max(id) FROM sequence_bin))));
+};
+if ($@){
+	die qq(Grant update permission to sequence_bin_id_seq: \n)
+	  . qq(GRANT USAGE,SELECT,UPDATE ON SEQUENCE sequence_bin_id_seq TO apache;\n);
+}
 $script->{'db2'}->{ $opts{'b'} }->commit;
 
 sub show_help {
