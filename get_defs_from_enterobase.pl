@@ -164,7 +164,7 @@ sub update_alleles {
 			if ( @$alleles && $data->{'paging'}->{'next'} ) {
 				$url = $data->{'paging'}->{'next'};
 			} else {
-				last;
+				last PAGE;
 			}
 		}
 		$script->{'db'}->commit;
