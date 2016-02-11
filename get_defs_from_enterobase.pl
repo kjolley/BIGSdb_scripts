@@ -350,6 +350,7 @@ ${bold}OPTIONS$norm
 
 ${bold}-a, --update_alleles$norm
     Update allele sequences.
+    
 ${bold}-d, --database$norm ${under}NAME$norm
     Database configuration name.
 
