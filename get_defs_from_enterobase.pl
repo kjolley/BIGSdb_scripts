@@ -41,13 +41,15 @@ use lib (LIB_DIR);
 use BIGSdb::Offline::Script;
 my %opts;
 GetOptions(
+	'a|update_alleles'  => \$opts{'a'},
 	'd|database=s'      => \$opts{'d'},
 	'e|enterobase_db=s' => \$opts{'e'},
 	'l|loci'            => \$opts{'l'},
 	'h|help'            => \$opts{'h'},
+	'p|update_profiles' => \$opts{'p'},
 	'r|route=s'         => \$opts{'r'},
 	's|scheme=s'        => \$opts{'s'},
-	'u|update'          => \$opts{'u'}
+	'scheme_id=i'       => \$opts{'scheme_id'}
 ) or die("Error in command line arguments\n");
 
 if ( $opts{'h'} ) {
@@ -58,10 +60,17 @@ my $ua           = LWP::UserAgent->new;
 my $token        = get_api_token();
 my $base64string = encode_base64("$token:");
 $ua->default_header( Authorization => "Basic $base64string" );
+my $script;
+if ( $opts{'d'} ) {
+	$script = initiate_script_object();
+}
 main();
 
 sub main {
 	my %methods = (
+		a => sub {
+			update_alleles();
+		},
 		l => sub {
 			my $loci = get_loci();
 			local $" = qq(\n);
@@ -70,8 +79,8 @@ sub main {
 		r => sub {
 			get_route();
 		},
-		u => sub {
-			update();
+		p => sub {
+			update_profiles();
 		}
 	);
 	foreach my $param ( sort keys %opts ) {
@@ -85,7 +94,7 @@ sub main {
 }
 
 sub initiate_script_object {
-	my $script = BIGSdb::Offline::Script->new(
+	my $script_object = BIGSdb::Offline::Script->new(
 		{
 			config_dir       => CONFIG_DIR,
 			lib_dir          => LIB_DIR,
@@ -94,53 +103,175 @@ sub initiate_script_object {
 			instance         => $opts{'d'},
 		}
 	);
-	die "Fatal error - check log file.\n" if !$script->{'db'};
-	return $script;
+	die "Fatal error - check log file.\n" if !$script_object->{'db'};
+	return $script_object;
 }
 
-sub update {
+sub update_alleles {
 	check_options(qw(d e s));
-	my $script = initiate_script_object;
-	my $loci   = get_loci();
-#	my $locus_count = 0;
-	foreach my $locus (@$loci) {
+	my $loci = get_loci();
+  LOCUS: foreach my $locus (@$loci) {
 		my $existing_alleles =
-		  $script->{'datastore'}->run_query( "SELECT allele_id,sequence FROM sequences WHERE locus=?",
+		  $script->{'datastore'}->run_query( 'SELECT allele_id,sequence FROM sequences WHERE locus=?',
 			$locus, { fetch => 'all_arrayref', cache => 'get_all_alleles' } );
 		my %existing = map { $_->[0] => $_->[1] } @$existing_alleles;
-		my $url      = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/alleles?locus=$locus&limit=1000";
-		say $url;
-		while (1){
-			my $resp     = $ua->get($url);
-			if ( $resp->is_success ) {
-				my $data        = decode_json( $resp->decoded_content );
-				my $alleles = $data->{'alleles'};
-				foreach my $allele (@$alleles){
-					say ">$locus-$allele->{'allele_id'}";
-					say $allele->{'seq'};
-				}
-				if ($data->{'paging'}->{'next'}){
-					$url = $data->{'paging'}->{'next'};
-					say Dumper $data->{'paging'};
-				} else {
-					last;
-				}
-			} else {
+		my $url = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/alleles?locus=$locus";
+		my %already_received;
+	  PAGE: while (1) {
+			my $resp = $ua->get($url);
+			if ( !$resp->is_success ) {
+				say $url;
 				say $resp->status_line;
 				say $resp->decoded_content;
+				last PAGE;
+			}
+			my $data    = decode_json( $resp->decoded_content );
+			my $alleles = $data->{'alleles'};
+			foreach my $allele (@$alleles) {
+				if ( $already_received{ $allele->{'allele_id'} } ) {
+					say "$locus-$allele->{'allele_id'} has already been received in this download!";
+					next;
+				}
+				$already_received{ $allele->{'allele_id'} } = 1;
+				( my $new_seq = uc( $allele->{'seq'} ) ) =~ s/\s//gx;
+				if ( $existing{ $allele->{'allele_id'} } ) {
+					next if $existing{ $allele->{'allele_id'} } eq $new_seq;
+					say "$locus-$allele->{'allele_id'} has changed!";
+				} else {
+					eval {
+						say "Inserting $locus-$allele->{'allele_id'}";
+						$script->{'db'}->do(
+							'INSERT INTO sequences (locus,allele_id,sequence,status,date_entered,'
+							  . 'datestamp,sender,curator) VALUES (?,?,?,?,?,?,?,?)',
+							undef,
+							$locus,
+							$allele->{'allele_id'},
+							$new_seq,
+							'unchecked',
+							'now',
+							'now',
+							UPDATE_USER,
+							UPDATE_USER
+						);
+					};
+					if ($@) {
+						say $@;
+						$script->{'db'}->rollback;
+						last LOCUS;
+					}
+				}
+			}
+			if ( @$alleles && $data->{'paging'}->{'next'} ) {
+				$url = $data->{'paging'}->{'next'};
+			} else {
 				last;
 			}
 		}
-#		$locus_count++;
-#		last if $locus_count == 10;
-		last;
+		$script->{'db'}->commit;
 	}
+	return;
+}
+
+sub update_profiles {
+	check_options(qw(d e s scheme_id));
+	my $loci = get_loci();
+	local $" = q(,);
+	my $existing_alleles = {};
+	foreach my $locus (@$loci) {
+		my $allele_ids = $script->{'datastore'}->run_query( 'SELECT allele_id FROM sequences WHERE locus=?',
+			$locus, { fetch => 'col_arrayref', cache => 'get_all_allele_ids' } );
+		%{ $existing_alleles->{$locus} } = map { $_ => 1 } @$allele_ids;
+	}
+	my $existing_profiles =
+	  $script->{'datastore'}
+	  ->run_query( qq(SELECT ST,@$loci FROM mv_scheme_$opts{'scheme_id'}), undef, { fetch => 'all_arrayref' } );
+	my $existing = {};
+	foreach my $profiles (@$existing_profiles) {
+		my $st = shift @$profiles;
+		foreach my $locus (@$loci) {
+			$existing->{$st}->{$locus} = shift @$profiles;
+		}
+	}
+	my $url = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/sts";
+	my %already_received;
+  PAGE: while (1) {
+		my $resp = $ua->get($url);
+		if ( !$resp->is_success ) {
+			say $url;
+			say $resp->status_line;
+			say $resp->decoded_content;
+			last PAGE;
+		}
+		my $data     = decode_json( $resp->decoded_content );
+		my $profiles = $data->{'STs'};
+	  PROFILE: foreach my $profile (@$profiles) {
+			my $st = $profile->{'ST_id'};
+			if ( $already_received{$st} ) {
+				say "ST-$st has already been received in this download!";
+				next;
+			}
+			$already_received{$st} = 1;
+			my %alleles;
+			my $alleles = $profile->{'alleles'};
+			foreach my $allele (@$alleles) {
+				$alleles{ $allele->{'locus'} } = $allele->{'allele_id'};
+			}
+			if ( $existing->{$st} ) {
+				my $changed;
+				foreach my $locus (@$loci) {
+					$changed = 1 if $alleles{$locus} ne $existing->{$st}->{$locus};
+				}
+				if ($changed) {
+					say "ST-$st has changed!\n";
+				}
+				next PROFILE;
+			} else {
+				foreach my $locus (@$loci) {
+					if ( !$existing_alleles->{$locus}->{ $alleles{$locus} } ) {
+						say "Cannot insert ST-$st - $locus-$alleles{$locus} is not defined!";
+						next PROFILE;
+					}
+				}
+				say "Inserting ST-$st.";
+				eval {
+					$script->{'db'}->do(
+						'INSERT INTO profiles (scheme_id,profile_id,sender,curator,'
+						  . 'date_entered,datestamp) VALUES (?,?,?,?,?,?)',
+						undef, $opts{'scheme_id'}, $st, UPDATE_USER, UPDATE_USER, 'now', 'now'
+					);
+					$script->{'db'}->do(
+						'INSERT INTO profile_fields (scheme_id,profile_id,scheme_field,value,curator,'
+						  . 'datestamp) VALUES (?,?,?,?,?,?)',
+						undef, $opts{'scheme_id'}, $st, 'ST', $st, UPDATE_USER, 'now'
+					);
+					foreach my $locus (@$loci) {
+						$script->{'db'}->do(
+							'INSERT INTO profile_members (scheme_id,locus,profile_id,allele_id,'
+							  . 'curator,datestamp) VALUES (?,?,?,?,?,?)',
+							undef, $opts{'scheme_id'}, $locus, $st, $alleles{$locus}, UPDATE_USER, 'now'
+						);
+					}
+				};
+				if ($@) {
+					say $@;
+					$script->{'db'}->rollback;
+					last PAGE;
+				}
+			}
+		}
+		if ( @$profiles && $data->{'paging'}->{'next'} ) {
+			$url = $data->{'paging'}->{'next'};
+		} else {
+			last PAGE;
+		}
+	}
+	$script->{'db'}->do("SELECT refresh_matview('mv_scheme_$opts{'scheme_id'}')");
+	$script->{'db'}->commit;
 	return;
 }
 
 sub get_route {
 	my $url = $SERVER_ADDRESS;
-
 	$url .= "/$opts{'e'}" if $opts{'e'};
 	$url .= "/$opts{'r'}" if $opts{'r'};
 	say $url;
@@ -158,7 +289,8 @@ sub get_route {
 
 sub check_options {
 	my @options = @_;
-	my %option_names = ( d => 'Database configuration', e => 'Enterobase database', s => 'scheme' );
+	my %option_names =
+	  ( d => 'Database configuration', e => 'Enterobase database', s => 'Scheme', scheme_id => 'Scheme id' );
 	foreach my $option (@options) {
 		die "$option_names{$option} (-$option) not provided.\n" if !$opts{$option};
 	}
@@ -183,8 +315,10 @@ sub get_loci {
 		}
 		return $locus_names;
 	} else {
+		say $url;
 		say $resp->status_line;
 		say $resp->decoded_content;
+		exit;
 	}
 	return [];
 }
@@ -214,6 +348,8 @@ ${bold}SYNOPSIS$norm
 
 ${bold}OPTIONS$norm
 
+${bold}-a, --update_alleles$norm
+    Update allele sequences.
 ${bold}-d, --database$norm ${under}NAME$norm
     Database configuration name.
 
@@ -226,11 +362,17 @@ ${bold}-h, --help$norm.
 ${bold}-l, --loci$norm
     Retrieve list of loci.
     
+${bold}-p, --update_profiles$norm
+    Update allelic profiles.
+    
 ${bold}-r, --route$norm
     Relative route.
     
 ${bold}-s, --scheme$norm ${under}SCHEME NAME$norm
     Scheme name.
+    
+${bold}--scheme_id$norm ${under}SCHEME ID$norm
+    Scheme id number in BIGSdb database.
 HELP
 	return;
 }
