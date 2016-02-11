@@ -45,6 +45,7 @@ GetOptions(
 	'd|database=s'      => \$opts{'d'},
 	'e|enterobase_db=s' => \$opts{'e'},
 	'l|loci'            => \$opts{'l'},
+	'limit=i'           => \$opts{'limit'},
 	'locus_regex=s'     => \$opts{'locus_regex'},
 	'h|help'            => \$opts{'h'},
 	'p|update_profiles' => \$opts{'p'},
@@ -118,6 +119,7 @@ sub update_alleles {
 			$locus, { fetch => 'all_arrayref', cache => 'get_all_alleles' } );
 		my %existing = map { $_->[0] => $_->[1] } @$existing_alleles;
 		my $url = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/alleles?locus=$locus";
+		$url .= "&limit=$opts{'limit'}" if $opts{'limit'};
 		my %already_received;
 	  PAGE: while (1) {
 			my $resp = $ua->get($url);
@@ -195,6 +197,7 @@ sub update_profiles {
 		}
 	}
 	my $url = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/sts";
+	$url .= "?limit=$opts{'limit'}" if $opts{'limit'};
 	my %already_received;
   PAGE: while (1) {
 		my $resp = $ua->get($url);
@@ -364,6 +367,9 @@ ${bold}-h, --help$norm.
     
 ${bold}-l, --loci$norm
     Retrieve list of loci.
+    
+${bold}--limit$norm ${under}LIMIT$norm
+    Request LIMIT number of alleles or profiles per page. 
     
 ${bold}--locus_regex$norm ${under}REGEX$norm
     Restrict updated loci to those that match regular expression. 
