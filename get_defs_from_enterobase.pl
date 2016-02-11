@@ -45,6 +45,7 @@ GetOptions(
 	'd|database=s'      => \$opts{'d'},
 	'e|enterobase_db=s' => \$opts{'e'},
 	'l|loci'            => \$opts{'l'},
+	'locus_regex=s'     => \$opts{'locus_regex'},
 	'h|help'            => \$opts{'h'},
 	'p|update_profiles' => \$opts{'p'},
 	'r|route=s'         => \$opts{'r'},
@@ -111,6 +112,7 @@ sub update_alleles {
 	check_options(qw(d e s));
 	my $loci = get_loci();
   LOCUS: foreach my $locus (@$loci) {
+		next LOCUS if $opts{'locus_regex'} && $locus !~ /$opts{'locus_regex'}/x;
 		my $existing_alleles =
 		  $script->{'datastore'}->run_query( 'SELECT allele_id,sequence FROM sequences WHERE locus=?',
 			$locus, { fetch => 'all_arrayref', cache => 'get_all_alleles' } );
@@ -362,6 +364,9 @@ ${bold}-h, --help$norm.
     
 ${bold}-l, --loci$norm
     Retrieve list of loci.
+    
+${bold}--locus_regex$norm ${under}REGEX$norm
+    Restrict updated loci to those that match regular expression. 
     
 ${bold}-p, --update_profiles$norm
     Update allelic profiles.
