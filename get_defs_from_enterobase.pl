@@ -222,7 +222,7 @@ sub update_profiles {
 					$changed = 1 if $alleles{$locus} ne $existing->{$st}->{$locus};
 				}
 				if ($changed) {
-					say "ST-$st has changed!\n";
+					say "ST-$st has changed!";
 				}
 				next PROFILE;
 			} else {
