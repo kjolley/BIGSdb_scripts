@@ -68,6 +68,7 @@ my $script;
 if ( $opts{'d'} ) {
 	$script = initiate_script_object();
 }
+local $| = 1;
 main();
 
 sub main {
@@ -117,7 +118,7 @@ sub check_alleles {
 	my $loci  = get_loci();
 	my $first = 1;
   LOCUS: foreach my $locus (@$loci) {
-		my ( $allele_count, $complete_cds, $min_length, $max_length ) = ( 0, 0, 9 * 99, 0 );
+		my ( $allele_count, $complete_cds, $min_length, $max_length ) = ( 0, 0, 9 ** 99, 0 );
 		next LOCUS if $opts{'locus_regex'} && $locus !~ /$opts{'locus_regex'}/x;
 		my $url = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/alleles?locus=$locus";
 		$url .= "&limit=$opts{'limit'}" if $opts{'limit'};
