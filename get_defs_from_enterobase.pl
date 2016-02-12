@@ -39,9 +39,11 @@ my $TOKEN_FILE     = "$ENV{'HOME'}/.enterobase_token";
 #######End Local configuration################################
 use lib (LIB_DIR);
 use BIGSdb::Offline::Script;
+use BIGSdb::Utils;
 my %opts;
 GetOptions(
 	'a|update_alleles'  => \$opts{'a'},
+	'check_alleles'     => \$opts{'check_alleles'},
 	'd|database=s'      => \$opts{'d'},
 	'e|enterobase_db=s' => \$opts{'e'},
 	'l|loci'            => \$opts{'l'},
@@ -70,7 +72,8 @@ main();
 
 sub main {
 	my %methods = (
-		a => sub {
+		check_alleles => sub { check_alleles(); },
+		a             => sub {
 			update_alleles();
 		},
 		l => sub {
@@ -107,6 +110,54 @@ sub initiate_script_object {
 	);
 	die "Fatal error - check log file.\n" if !$script_object->{'db'};
 	return $script_object;
+}
+
+sub check_alleles {
+	check_options(qw(e s));
+	my $loci  = get_loci();
+	my $first = 1;
+  LOCUS: foreach my $locus (@$loci) {
+		my ( $allele_count, $complete_cds, $min_length, $max_length ) = ( 0, 0, 9 * 99, 0 );
+		next LOCUS if $opts{'locus_regex'} && $locus !~ /$opts{'locus_regex'}/x;
+		my $url = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/alleles?locus=$locus";
+		$url .= "&limit=$opts{'limit'}" if $opts{'limit'};
+		my %already_received;
+	  PAGE: while (1) {
+			my $resp = $ua->get($url);
+			if ( !$resp->is_success ) {
+				say $url;
+				say $resp->status_line;
+				say $resp->decoded_content;
+				last PAGE;
+			}
+			my $data    = decode_json( $resp->decoded_content );
+			my $alleles = $data->{'alleles'};
+			foreach my $allele (@$alleles) {
+				next if $already_received{ $allele->{'allele_id'} };
+				$already_received{ $allele->{'allele_id'} } = 1;
+				$allele_count++;
+				my $cds = BIGSdb::Utils::is_complete_cds( $allele->{'seq'} );
+				$complete_cds++ if $cds->{'cds'};
+				my $length = length $allele->{'seq'};
+				$min_length = $length if $length < $min_length;
+				$max_length = $length if $length > $max_length;
+			}
+			if ( @$alleles && $data->{'paging'}->{'next'} ) {
+				$url = $data->{'paging'}->{'next'};
+			} else {
+				last PAGE;
+			}
+		}
+		say qq(Locus\tAlleles\tCDS\t%CDS\tMin length\tMax length) if $first;
+		$first = 0;
+		print qq($locus\t$allele_count);
+		if ( $allele_count > 0 ) {
+			my $pc_cds = BIGSdb::Utils::decimal_place( $complete_cds / $allele_count * 100, 1 );
+			print qq(\t$complete_cds\t$pc_cds\t$min_length\t$max_length);
+		}
+		print qq(\n);
+	}
+	return;
 }
 
 sub update_alleles {
@@ -355,6 +406,12 @@ ${bold}OPTIONS$norm
 
 ${bold}-a, --update_alleles$norm
     Update allele sequences.
+    
+${bold}--check_alleles$norm
+    Report count of alleles and number that are complete coding sequences.
+    This can be used to check if there are problems with allele definitions
+    in cgMLST schemes as most alleles should be complete CDS.
+    Cannot be used with --update_alleles.
     
 ${bold}-d, --database$norm ${under}NAME$norm
     Database configuration name.
