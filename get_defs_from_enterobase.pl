@@ -185,12 +185,22 @@ sub update_alleles {
 			my $data    = decode_json( $resp->decoded_content );
 			my $alleles = $data->{'alleles'};
 			foreach my $allele (@$alleles) {
+
+				#Don't trust Enterobase API not to serve up bad alleles.
+				if ( $allele->{'allele_id'} < 1 ) {
+					say "$locus-$allele->{'allele_id'} has a -ve allele id!";
+					next;
+				}
 				if ( $already_received{ $allele->{'allele_id'} } ) {
 					say "$locus-$allele->{'allele_id'} has already been received in this download!";
 					next;
 				}
-				$already_received{ $allele->{'allele_id'} } = 1;
 				( my $new_seq = uc( $allele->{'seq'} ) ) =~ s/\s//gx;
+				if ( $new_seq =~ /N/x ) {
+					say "$locus-$allele->{'allele_id'} contains Ns!";
+					next;
+				}
+				$already_received{ $allele->{'allele_id'} } = 1;
 				if ( $existing{ $allele->{'allele_id'} } ) {
 					next if $existing{ $allele->{'allele_id'} } eq $new_seq;
 					say "$locus-$allele->{'allele_id'} has changed!";
