@@ -29,8 +29,8 @@ if ( $opts{'h'} ) {
 	exit;
 }
 if ( !$opts{'a'} ) {
-	say "Usage: profiles_with_species.pl -a <seqdef db config>";
-	say "Help: profiles_with_species.pl -h";
+	say 'Usage: profiles_with_species.pl -a <seqdef db config>';
+	say 'Help: profiles_with_species.pl -h';
 	exit;
 }
 my $script = BIGSdb::Offline::Script->new(
@@ -62,13 +62,13 @@ sub print_header {
 	my ($scheme_id) = @_;
 	my $scheme_info = $script->{'datastore'}->get_scheme_info( $scheme_id, { get_pk => 1 } );
 	if ( !defined $scheme_info->{'primary_key'} ) {
-		$script->{'logger'}->error("No primary key set.");
+		$script->{'logger'}->error('No primary key set.');
 		undef $script;
 		exit;
 	}
 	my $loci = $script->{'datastore'}->get_scheme_loci($scheme_id);
 	if ( $opts{'p'} ) {
-		s/^$opts{'p'}// foreach @$loci;
+		s/^$opts{'p'}//x foreach @$loci;
 	}
 	my $scheme_fields = $script->{'datastore'}->get_scheme_fields($scheme_id);
 	local $" = "\t";
@@ -86,18 +86,18 @@ sub print_scheme {
 	my $scheme_info   = $script->{'datastore'}->get_scheme_info( $scheme_id, { get_pk => 1 } );
 	my $loci          = $script->{'datastore'}->get_scheme_loci($scheme_id);
 	my $scheme_fields = $script->{'datastore'}->get_scheme_fields($scheme_id);
-	my $matview = $script->{'datastore'}->run_query( "SELECT EXISTS(SELECT 1 FROM matviews WHERE v_name=?)", "scheme_$scheme_id" );
-	my $view = $matview ? "mv_scheme_$scheme_id" : "scheme_$scheme_id";
-	my $profiles = $script->{'datastore'}->run_query( "SELECT * FROM $view ORDER BY CAST($scheme_info->{'primary_key'} AS INT)",
+	my $view          = "mv_scheme_$scheme_id";
+	my $profiles =
+	  $script->{'datastore'}->run_query( "SELECT * FROM $view ORDER BY CAST($scheme_info->{'primary_key'} AS INT)",
 		undef, { fetch => 'all_arrayref', slice => {} } );
 	my ( $isolates_sql, $species_sql );
-
 	if ( $opts{'b'} ) {
 
 		#Check species field exists
-		my $check_sql =
-		  $script->{'dbi'}
-		  ->prepare( "SELECT EXISTS(SELECT * FROM information_schema.columns WHERE " . "table_name='isolates' AND column_name='species')" );
+		my $check_sql = $script->{'dbi'}->prepare(
+			    q[SELECT EXISTS(SELECT * FROM information_schema.columns WHERE ]
+			  . q[table_name='isolates' AND column_name='species')]
+		);
 		eval { $check_sql->execute };
 		$script->{'logger'}->error($@) if $@;
 		my ($field_exists) = $check_sql->fetchrow_array;
@@ -106,19 +106,20 @@ sub print_scheme {
 		} else {
 			my $locus_count = @$loci;
 			my $qry =
-			  "SELECT isolates.id FROM isolates LEFT JOIN allele_designations ON " . "isolates.id=allele_designations.isolate_id WHERE ";
+			    'SELECT isolates.id FROM isolates LEFT JOIN allele_designations ON '
+			  . 'isolates.id=allele_designations.isolate_id WHERE ';
 			my @locus_clause;
 			foreach my $locus (@$loci) {
 				my $cleaned_locus = $locus;
 				if ( $opts{'p'} ) {
-					$cleaned_locus =~ s/^$opts{'p'}//;
+					$cleaned_locus =~ s/^$opts{'p'}//x;
 				}
 				push @locus_clause, "(locus='$cleaned_locus' AND allele_id=?)";
 			}
 			local $" = ' OR ';
 			$qry .= "@locus_clause GROUP BY isolates.id HAVING COUNT(isolates.id)=$locus_count";
 			$isolates_sql = $script->{'dbi'}->prepare($qry);
-			$species_sql  = $script->{'dbi'}->prepare("SELECT species FROM isolates WHERE id=?");
+			$species_sql  = $script->{'dbi'}->prepare('SELECT species FROM isolates WHERE id=?');
 		}
 	}
 	my %ignore_species;
@@ -126,10 +127,11 @@ sub print_scheme {
 		my @ignore = split ',', $opts{'N'};
 		%ignore_species = map { $_ => 1 } @ignore;
 	}
+	my $locus_indices = $script->{'datastore'}->get_scheme_locus_indices($scheme_id);
 	foreach my $profile (@$profiles) {
 		print $profile->{ lc( $scheme_info->{'primary_key'} ) };
 		my @allelic_profile;
-		push @allelic_profile, $profile->{ lc($_) } foreach @$loci;
+		push @allelic_profile, $profile->{'profile'}->[ $locus_indices->{$_} ] foreach @$loci;
 		local $" = "\t";
 		print "\t@allelic_profile";
 		foreach my $field (@$scheme_fields) {
@@ -149,9 +151,9 @@ sub print_scheme {
 				my ($species) = $species_sql->fetchrow_array // '';
 				if ( $opts{'g'} ) {
 					my $initial = substr( $opts{'g'}, 0, 1 );
-					$species =~ s/^$initial\./$opts{'g'}/;
+					$species =~ s/^$initial\./$opts{'g'}/x;
 				}
-				$species =~ s/ or .*$//;    #Special case of alternative names in Aeromonas
+				$species =~ s/ or .*$//x;    #Special case of alternative names in Aeromonas
 				$species_count{$species}++ if $species && !$ignore_species{$species};
 			}
 			my @species_names = sort { $species_count{$b} <=> $species_count{$a} } keys %species_count;
