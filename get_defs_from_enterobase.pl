@@ -26,6 +26,7 @@ use Term::Cap;
 use LWP::UserAgent;
 use MIME::Base64;
 use JSON;
+use Digest::MD5;
 use Data::Dumper qw(Dumper);
 ###########Local configuration################################
 use constant {
@@ -53,6 +54,7 @@ GetOptions(
 	'h|help'            => \$opts{'h'},
 	'p|update_profiles' => \$opts{'p'},
 	'r|route=s'         => \$opts{'r'},
+	'n|new_loci'        => \$opts{'n'},
 	's|scheme=s'        => \$opts{'s'},
 	'scheme_id=i'       => \$opts{'scheme_id'}
 ) or die("Error in command line arguments\n");
@@ -170,7 +172,9 @@ sub update_alleles {
 		my $existing_alleles =
 		  $script->{'datastore'}->run_query( 'SELECT allele_id,sequence FROM sequences WHERE locus=?',
 			$locus, { fetch => 'all_arrayref', cache => 'get_all_alleles' } );
+		next if @$existing_alleles && $opts{'n'};
 		my %existing = map { $_->[0] => $_->[1] } @$existing_alleles;
+		my %existing_seqs = map { Digest::MD5::md5_hex( $_->[1] ) => $_->[0] } @$existing_alleles;
 		my $url = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/alleles?locus=$locus";
 		$url .= "&limit=$opts{'limit'}" if $opts{'limit'};
 		my %already_received;
@@ -204,6 +208,9 @@ sub update_alleles {
 				if ( $existing{ $allele->{'allele_id'} } ) {
 					next if $existing{ $allele->{'allele_id'} } eq $new_seq;
 					say "$locus-$allele->{'allele_id'} has changed!";
+				} elsif ( defined $existing_seqs{ Digest::MD5::md5_hex( $allele->{'seq'} ) } ) {
+					say "$locus-$allele->{'allele_id'} is already defined as "
+					  . "$locus-$existing_seqs{Digest::MD5::md5_hex($allele->{'seq'})}!";
 				} else {
 					eval {
 						say "Inserting $locus-$allele->{'allele_id'}";
@@ -226,6 +233,7 @@ sub update_alleles {
 						$script->{'db'}->rollback;
 						last LOCUS;
 					}
+					$existing_seqs{ Digest::MD5::md5_hex( $allele->{'seq'} ) } = $allele->{'allele_id'};
 				}
 			}
 			if ( @$alleles && $data->{'paging'}->{'next'} ) {
@@ -442,6 +450,9 @@ ${bold}--limit$norm ${under}LIMIT$norm
     
 ${bold}--locus_regex$norm ${under}REGEX$norm
     Restrict updated loci to those that match regular expression. 
+    
+${bold}-n, --new_loci$norm
+    Only download new loci (those without any existing alleles defined).
     
 ${bold}-p, --update_profiles$norm
     Update allelic profiles.
