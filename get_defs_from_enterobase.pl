@@ -1,6 +1,6 @@
 #!/usr/bin/perl 
 #Written by Keith Jolley
-#Copyright (c) 2016, University of Oxford
+#Copyright (c) 2016-2017, University of Oxford
 #E-mail: keith.jolley@zoo.ox.ac.uk
 #
 #This program is free software: you can redistribute it and/or modify
@@ -35,7 +35,7 @@ use constant {
 	DBASE_CONFIG_DIR => '/etc/bigsdb/dbases',
 	UPDATE_USER      => 3
 };
-my $SERVER_ADDRESS = 'https://enterobase.warwick.ac.uk/api/v1.0';
+my $SERVER_ADDRESS = 'https://enterobase.warwick.ac.uk/api/v2.0';
 my $TOKEN_FILE     = "$ENV{'HOME'}/.enterobase_token";
 #######End Local configuration################################
 use lib (LIB_DIR);
