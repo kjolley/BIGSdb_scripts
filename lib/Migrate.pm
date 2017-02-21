@@ -1,9 +1,10 @@
 #Migration of data between BIGSdb databases
 #Written by Keith Jolley
-#Copyright (c) 2011-2015, University of Oxford
+#Copyright (c) 2011-2017, University of Oxford
 package BIGSdb_Scripts::Migrate;
 use strict;
 use warnings;
+use 5.010;
 use Error qw(:try);
 use List::MoreUtils qw(uniq);
 use base qw(BIGSdb::Offline::Script);
@@ -16,7 +17,8 @@ sub run_script {
 		my @client_dbs = split /,/, $self->{'options'}->{'c'};
 		foreach (@client_dbs) {
 			$self->_initiate_db($_);
-			die "Client database $_ should be an isolate database.\n" if $self->{'system2'}->{$_}->{'dbtype'} ne 'isolates';
+			die "Client database $_ should be an isolate database.\n"
+			  if $self->{'system2'}->{$_}->{'dbtype'} ne 'isolates';
 		}
 	}
 	$self->{'user_map'} = $self->_map_users;
@@ -65,16 +67,30 @@ sub _db_connect {
 sub _map_users {
 
 	#Map users based on first and surnames.
+	#Assumes that there is only one site-wide database.
 	my ($self) = @_;
-	my $db1_users = $self->{'datastore'}->run_query( "SELECT * FROM users ORDER BY id", undef, { fetch => 'all_arrayref', slice => {} } );
+	my $db1_users = $self->{'datastore'}
+	  ->run_query( 'SELECT * FROM users ORDER BY id', undef, { fetch => 'all_arrayref', slice => {} } );
 	my $sql =
-	  $self->{'db2'}->{ $self->{'options'}->{'b'} }->prepare("SELECT id, user_name FROM users WHERE first_name = ? AND surname = ?");
+	  $self->{'db2'}->{ $self->{'options'}->{'b'} }
+	  ->prepare('SELECT id, user_name FROM users WHERE first_name=? AND surname=?');
+	my $sql_is_common_site_user = $self->{'db2'}->{ $self->{'options'}->{'b'} }
+	  ->prepare('SELECT id FROM users WHERE user_name=? AND user_db IS NOT NULL');
 	my $map;
-	foreach (@$db1_users) {
-		eval { $sql->execute( $_->{'first_name'}, $_->{'surname'} ) };
+	foreach my $db1_user (@$db1_users) {
+		eval { $sql->execute( $db1_user->{'first_name'}, $db1_user->{'surname'} ) };
 		$self->{'logger'}->error($@) if $@;
 		my $db2_user = $sql->fetchrow_hashref;
-		$map->{ $_->{'id'} } = $db2_user->{'id'} if $db2_user->{'user_name'};
+		if ( $db2_user->{'user_name'} ) {
+			$map->{ $db1_user->{'id'} } = $db2_user->{'id'};
+		} else {
+			eval { $sql_is_common_site_user->execute( $db1_user->{'user_name'} ) };
+			$self->{'logger'}->error($@) if $@;
+			my ($common_user) = $sql_is_common_site_user->fetchrow_array;
+			if ($common_user) {
+				$map->{ $db1_user->{'id'} } = $common_user;
+			}
+		}
 	}
 	return $map;
 }
@@ -87,15 +103,15 @@ sub get_db_types {
 sub locus_exists_in_destination {
 	my ( $self, $locus ) = @_;
 	my $exists = $self->{'datastore'}->run_query( "SELECT EXISTS(SELECT * FROM loci WHERE id=?)",
-		$locus, { db => $self->{'db2'}->{ $self->{'options'}->{'b'} }, cache => 'Migrate::locus_exisgts_in_destination' } );
+		$locus,
+		{ db => $self->{'db2'}->{ $self->{'options'}->{'b'} }, cache => 'Migrate::locus_exisgts_in_destination' } );
 	return $exists;
 }
 
 sub locus_exists_in_source {
 	my ( $self, $locus ) = @_;
-	my $exists =
-	  $self->{'datastore'}
-	  ->run_query( "SELECT EXISTS(SELECT * FROM loci WHERE id=?)", $locus, { cache => 'Migrate::locus_exists_in_source' } );
+	my $exists = $self->{'datastore'}->run_query( "SELECT EXISTS(SELECT * FROM loci WHERE id=?)",
+		$locus, { cache => 'Migrate::locus_exists_in_source' } );
 	return $exists;
 }
 
@@ -103,7 +119,9 @@ sub _get_missing_curator_in_locus_tables {
 	my ( $self, $locus ) = @_;
 	my %bad_users;
 	my @list;
-	foreach my $table (qw (loci locus_extended_attributes locus_aliases locus_descriptions locus_links locus_refs locus_curators)) {
+	foreach my $table (
+		qw (loci locus_extended_attributes locus_aliases locus_descriptions locus_links locus_refs locus_curators))
+	{
 		my $curators = $self->{'datastore'}->run_query(
 			"SELECT DISTINCT "
 			  . ( $table eq 'locus_curators' ? 'curator_id' : 'curator' )
@@ -124,9 +142,11 @@ sub _get_missing_curator_in_locus_tables {
 sub get_missing_allele_seq_users_in_destination {
 	my ( $self, $locus ) = @_;
 	my $senders =
-	  $self->{'datastore'}->run_query( "SELECT DISTINCT sender FROM sequences WHERE locus=?", $locus, { fetch => 'col_arrayref' } );
+	  $self->{'datastore'}
+	  ->run_query( "SELECT DISTINCT sender FROM sequences WHERE locus=?", $locus, { fetch => 'col_arrayref' } );
 	my $curators =
-	  $self->{'datastore'}->run_query( "SELECT DISTINCT curator FROM sequences WHERE locus=?", $locus, { fetch => 'col_arrayref' } );
+	  $self->{'datastore'}
+	  ->run_query( "SELECT DISTINCT curator FROM sequences WHERE locus=?", $locus, { fetch => 'col_arrayref' } );
 	my %bad_users;
 	foreach ( uniq( @$senders, @$curators ) ) {
 		my $user_info = $self->{'datastore'}->get_user_info($_);
@@ -137,12 +157,11 @@ sub get_missing_allele_seq_users_in_destination {
 
 sub get_missing_designation_users_in_destination {
 	my ( $self, $isolate_id ) = @_;
-	my $senders =
-	  $self->{'datastore'}
-	  ->run_query( "SELECT DISTINCT sender FROM allele_designations WHERE isolate_id=?", $isolate_id, { fetch => 'col_arrayref' } );
+	my $senders = $self->{'datastore'}->run_query( "SELECT DISTINCT sender FROM allele_designations WHERE isolate_id=?",
+		$isolate_id, { fetch => 'col_arrayref' } );
 	my $curators =
-	  $self->{'datastore'}
-	  ->run_query( "SELECT DISTINCT curator FROM allele_designations WHERE isolate_id=?", $isolate_id, { fetch => 'col_arrayref' } );
+	  $self->{'datastore'}->run_query( "SELECT DISTINCT curator FROM allele_designations WHERE isolate_id=?",
+		$isolate_id, { fetch => 'col_arrayref' } );
 	my %bad_users;
 	foreach ( uniq( @$senders, @$curators ) ) {
 		my $user_info = $self->{'datastore'}->get_user_info($_);
@@ -153,9 +172,8 @@ sub get_missing_designation_users_in_destination {
 
 sub is_locus_in_scheme {
 	my ( $self, $locus ) = @_;
-	my $in_scheme =
-	  $self->{'datastore'}
-	  ->run_query( "SELECT EXISTS(SELECT * FROM scheme_members WHERE locus=?)", $locus, { cache => 'Migrate::is_locus_in_scheme' } );
+	my $in_scheme = $self->{'datastore'}->run_query( "SELECT EXISTS(SELECT * FROM scheme_members WHERE locus=?)",
+		$locus, { cache => 'Migrate::is_locus_in_scheme' } );
 	return $in_scheme;
 }
 
@@ -169,17 +187,23 @@ sub is_locus_in_destination {
 sub copy_locus {
 	my ( $self, $locus ) = @_;
 	die "Locus $locus does not exist in database $self->{'options'}->{'a'}\n" if !$self->locus_exists_in_source($locus);
-	die "Locus $locus already exists in database $self->{'options'}->{'b'}\n" if $self->locus_exists_in_destination($locus);
-	die "Missing users in database $self->{'options'}->{'b'}" if keys %{ $self->get_missing_allele_seq_users_in_destination($locus) };
-	die "Missing users in database $self->{'options'}->{'b'}" if keys %{ $self->_get_missing_curator_in_locus_tables($locus) };
-	die "Locus $locus is a member of a scheme.\n"             if $self->is_locus_in_scheme($locus);
+	die "Locus $locus already exists in database $self->{'options'}->{'b'}\n"
+	  if $self->locus_exists_in_destination($locus);
+	die "Missing users in database $self->{'options'}->{'b'}"
+	  if keys %{ $self->get_missing_allele_seq_users_in_destination($locus) };
+	die "Missing users in database $self->{'options'}->{'b'}"
+	  if keys %{ $self->_get_missing_curator_in_locus_tables($locus) };
+	die "Locus $locus is a member of a scheme.\n" if $self->is_locus_in_scheme($locus);
 	local $" = ',';
 	eval {
-		foreach my $table (qw(loci locus_extended_attributes locus_aliases locus_descriptions locus_links locus_refs locus_curators))
+		foreach my $table (
+			qw(loci locus_extended_attributes locus_aliases locus_descriptions locus_links locus_refs locus_curators))
 		{
 			my ( @fields, @placeholders, @copy_data );
 			my $attr = $self->{'datastore'}->get_table_field_attributes($table);
-			my $data = $self->{'datastore'}->run_query( "SELECT * FROM $table WHERE " . ( $table eq 'loci' ? 'id' : 'locus' ) . "=?",
+			my $data =
+			  $self->{'datastore'}
+			  ->run_query( "SELECT * FROM $table WHERE " . ( $table eq 'loci' ? 'id' : 'locus' ) . "=?",
 				$locus, { fetch => 'row_hashref' } );
 			if ( ref $data eq 'HASH' ) {
 				$data->{'curator'}    = $self->{'user_map'}->{ $data->{'curator'} }    if defined $data->{'curator'};
@@ -221,8 +245,7 @@ sub copy_alleles {
 		$sql_put->{$table} = $self->{'db2'}->{ $self->{'options'}->{'b'} }->prepare($qry);
 	}
 	eval {
-		foreach my $table (@tables)
-		{
+		foreach my $table (@tables) {
 			$sql_get->{$table}->execute($locus);
 			while ( my $data = $sql_get->{$table}->fetchrow_hashref ) {
 				foreach (qw(curator sender)) {
@@ -299,7 +322,8 @@ sub clone_locus {
 			push @placeholders, '?';
 		}
 		local $" = ',';
-		my $sql_get = $self->{'db'}->prepare( "SELECT @fields FROM $table WHERE " . ( $table eq 'loci' ? 'id' : 'locus' ) . "=?" );
+		my $sql_get =
+		  $self->{'db'}->prepare( "SELECT @fields FROM $table WHERE " . ( $table eq 'loci' ? 'id' : 'locus' ) . "=?" );
 		my $qry     = "INSERT INTO $table (@fields) VALUES (@placeholders)";
 		my $sql_put = $self->{'db2'}->{ $self->{'options'}->{'b'} }->prepare($qry);
 		eval {
@@ -326,7 +350,8 @@ sub clone_locus {
 sub isolate_exists_in_destination {
 	my ( $self, $isolate_id ) = @_;
 	my $exists = $self->{'datastore'}->run_query( "SELECT EXISTS(SELECT * FROM isolates WHERE id=?)",
-		$isolate_id, { db => $self->{'db2'}->{ $self->{'options'}->{'b'} }, cache => 'Migrate::isolate_exists_in_destination' } );
+		$isolate_id,
+		{ db => $self->{'db2'}->{ $self->{'options'}->{'b'} }, cache => 'Migrate::isolate_exists_in_destination' } );
 	return $exists;
 }
 
@@ -358,7 +383,7 @@ sub get_next_id {
 
 		#this will find next id except when id 1 is missing
 		my $qry =
-		  "SELECT l.id + 1 AS start FROM $table AS l left outer join $table AS r on l.id+1=r.id where r.id is null ORDER BY l.id LIMIT 1";
+"SELECT l.id + 1 AS start FROM $table AS l left outer join $table AS r on l.id+1=r.id where r.id is null ORDER BY l.id LIMIT 1";
 		$self->{'sql'}->{'next_id'}->{$table} = $self->{'db2'}->{ $self->{'options'}->{'b'} }->prepare($qry);
 	}
 	eval { $self->{'sql'}->{'next_id'}->{$table}->execute };
