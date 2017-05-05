@@ -275,24 +275,13 @@ sub format_hierarchy_html {
 	my $top_level = defined $depth ? 0 : 1;
 	say q(<ul>) if $top_level;
 	$depth //= 0;
-	my %fields = (
-		species => 'f_species',
-		phylum  => 'e_species&#124;&#124;phylum',
-		class   => 'e_species&#124;&#124;class',
-		order   => 'e_species&#124;&#124;order',
-		family  => 'e_species&#124;&#124;family',
-		genus   => 'e_species&#124;&#124;genus',
-	);
 	foreach my $taxon ( sort keys %$hierarchy ) {
 		my $indent = 4 * $depth + 4;
 		print q( ) x $indent;
 		my @values;
 		if ( $hierarchy->{$taxon}->{'isolates'} ) {
 			if ( $opts{'hyperlinks'} ) {
-				my $url = 'https://pubmlst.org/bigsdb?db=pubmlst_rmlst_isolates&amp;set_id=1&amp;page=query&amp;'
-				  . "prov_field1=$fields{$hierarchy->{$taxon}->{'rank'}}&amp;prov_value1=$taxon&amp;submit=1";
-				$url =~ s/\ /%20/gx;
-				push @values, qq(isolates:<a href="$url">$hierarchy->{$taxon}->{'isolates'}</a>);
+				push @values, qq(isolates:<a data-rank="$hierarchy->{$taxon}->{'rank'}" data-taxon="$taxon">$hierarchy->{$taxon}->{'isolates'}</a>);
 			} else {
 				push @values, qq(isolates:$hierarchy->{$taxon}->{'isolates'});
 			}
