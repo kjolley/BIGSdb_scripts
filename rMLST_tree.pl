@@ -35,6 +35,7 @@ GetOptions(
 	'depth=i'       => \$opts{'depth'},
 	'format=s'      => \$opts{'format'},
 	'help'          => \$opts{'help'},
+	'hyperlinks'    => \$opts{'hyperlinks'},
 	'isolate_count' => \$opts{'isolate_count'},
 	'method=s'      => \$opts{'method'},
 	'public'        => \$opts{'public'},
@@ -210,6 +211,7 @@ sub hierarchy {
 	my %taxa;
 	my $rst_counts     = get_rst_counts($taxonomy);
 	my $isolate_counts = get_isolate_counts($taxonomy);
+
 	if ($depth) {
 		foreach my $species ( keys %$taxonomy ) {
 			next if !$sub_rank;
@@ -223,6 +225,7 @@ sub hierarchy {
 		}
 		foreach my $taxon ( sort keys %taxa ) {
 			my $taxa = hierarchy( $sub_rank, $taxon, $depth, $taxonomy );
+			$hierarchy->{$taxon}->{'rank'} = $sub_rank;
 			if ( $opts{'rst_count'} ) {
 				$hierarchy->{$taxon}->{'rSTs'} = $rst_counts->{$sub_rank}->{$taxon} // 0;
 			}
@@ -272,18 +275,34 @@ sub format_hierarchy_html {
 	my $top_level = defined $depth ? 0 : 1;
 	say q(<ul>) if $top_level;
 	$depth //= 0;
+	my %fields = (
+		species => 'f_species',
+		phylum  => 'e_species&#124;&#124;phylum',
+		class   => 'e_species&#124;&#124;class',
+		order   => 'e_species&#124;&#124;order',
+		family  => 'e_species&#124;&#124;family',
+		genus   => 'e_species&#124;&#124;genus',
+	);
 	foreach my $taxon ( sort keys %$hierarchy ) {
 		my $indent = 4 * $depth + 4;
 		print q( ) x $indent;
 		my @values;
-		push @values, qq(isolates:$hierarchy->{$taxon}->{'isolates'}) if $hierarchy->{$taxon}->{'isolates'};
-		push @values, qq(rSTs:$hierarchy->{$taxon}->{'rSTs'})         if $hierarchy->{$taxon}->{'rSTs'};
-		my $term = $taxon;
+		if ( $hierarchy->{$taxon}->{'isolates'} ) {
+			if ( $opts{'hyperlinks'} ) {
+				my $url = 'https://pubmlst.org/bigsdb?db=pubmlst_rmlst_isolates&amp;set_id=1&amp;page=query&amp;'
+				  . "prov_field1=$fields{$hierarchy->{$taxon}->{'rank'}}&amp;prov_value1=$taxon&amp;submit=1";
+				$url =~ s/\ /%20/gx;
+				push @values, qq(isolates:<a href="$url">$hierarchy->{$taxon}->{'isolates'}</a>);
+			} else {
+				push @values, qq(isolates:$hierarchy->{$taxon}->{'isolates'});
+			}
+		}
+		push @values, qq(rSTs:$hierarchy->{$taxon}->{'rSTs'}) if $hierarchy->{$taxon}->{'rSTs'};
+		my $term = qq($taxon);
 		local $" = q(; );
 		$term .= qq( (@values)) if @values;
-		print qq(<li>$term);
+		print qq(<li><span title="$hierarchy->{$taxon}->{'rank'}">$term</span>);
 		my $closing_on_new_line = 0;
-
 		if ( $hierarchy->{$taxon}->{'children'} ) {
 			say q(<ul>);
 			format_hierarchy_html( $hierarchy->{$taxon}->{'children'}, $depth + 1 );
@@ -321,6 +340,10 @@ ${bold}--help$norm
     
 ${bold}--format [${under}format$norm]
     Either text, html. Default 'text'.
+
+${bold}--hyperlinks$norm
+    Include hyperlinks to the isolate database when generating HTML taxonomic 
+    output. 
     
 ${bold}--isolate_count
 	Include isolate count in output.
