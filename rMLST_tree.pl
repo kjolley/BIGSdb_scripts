@@ -281,7 +281,7 @@ sub format_hierarchy_html {
 		my @values;
 		if ( $hierarchy->{$taxon}->{'isolates'} ) {
 			if ( $opts{'hyperlinks'} ) {
-				push @values, qq(isolates:<a data-rank="$hierarchy->{$taxon}->{'rank'}" data-taxon="$taxon">$hierarchy->{$taxon}->{'isolates'}</a>);
+				push @values, qq(isolates:<a data-i="1">$hierarchy->{$taxon}->{'isolates'}</a>);
 			} else {
 				push @values, qq(isolates:$hierarchy->{$taxon}->{'isolates'});
 			}
@@ -290,7 +290,7 @@ sub format_hierarchy_html {
 		my $term = qq($taxon);
 		local $" = q(; );
 		$term .= qq( (@values)) if @values;
-		print qq(<li><span title="$hierarchy->{$taxon}->{'rank'}">$term</span>);
+		print qq(<li data-rank="$hierarchy->{$taxon}->{'rank'}" data-taxon="$taxon"><span title="$hierarchy->{$taxon}->{'rank'}">$term</span>);
 		my $closing_on_new_line = 0;
 		if ( $hierarchy->{$taxon}->{'children'} ) {
 			say q(<ul>);
