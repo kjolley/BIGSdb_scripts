@@ -1,23 +1,28 @@
-#!/usr/bin/perl -T
+#!/usr/bin/perl
 #Generate trees from rMLST profile data.
 #Written by Keith Jolley, 2017
 use strict;
 use warnings;
 use 5.010;
-use Getopt::Long qw(:config no_ignore_case);
-use Term::Cap;
 ###########Local configuration################################
 use constant {
-	CONFIG_DIR         => '/etc/bigsdb',
-	LIB_DIR            => '/usr/local/lib',
-	DBASE_CONFIG_DIR   => '/etc/bigsdb/dbases',
-	ISOLATE_DB         => 'pubmlst_rmlst_isolates',
-	SEQDEF_DB          => 'pubmlst_rmlst_seqdef',
-	RMLST_SCHEME_CACHE => 'mv_scheme_1',
+	CONFIG_DIR       => '/etc/bigsdb',
+	LIB_DIR          => '/usr/local/lib',
+	DBASE_CONFIG_DIR => '/etc/bigsdb/dbases',
+	ISOLATE_DB       => 'pubmlst_rmlst_isolates',
+	SEQDEF_DB        => 'pubmlst_rmlst_seqdef',
+	RMLST_SCHEME_ID  => 1,
+	TMP_DIR          => '/var/tmp'
 };
 #######End Local configuration###############################
 use lib (LIB_DIR);
 use BIGSdb::Offline::Script;
+use BIGSdb::Utils;
+use Getopt::Long qw(:config no_ignore_case);
+use Term::Cap;
+use File::Path qw(make_path);
+use File::Copy;
+use Bio::SeqIO;
 use constant RANKS => qw(genus family order class phylum);
 
 #Direct all library logging calls to screen
@@ -32,16 +37,21 @@ Log::Log4perl->init( \$log_conf );
 my $logger = Log::Log4perl::get_logger('BIGSdb.Script');
 my %opts;
 GetOptions(
-	'depth=i'       => \$opts{'depth'},
-	'format=s'      => \$opts{'format'},
-	'help'          => \$opts{'help'},
-	'hyperlinks'    => \$opts{'hyperlinks'},
-	'isolate_count' => \$opts{'isolate_count'},
-	'method=s'      => \$opts{'method'},
-	'public'        => \$opts{'public'},
-	'rank=s'        => \$opts{'rank'},
-	'rst_count'     => \$opts{'rst_count'},
-	'taxon=s'       => \$opts{'taxon'}
+	'depth=i'           => \$opts{'depth'},
+	'dir=s'             => \$opts{'dir'},
+	'format=s'          => \$opts{'format'},
+	'help'              => \$opts{'help'},
+	'hyperlinks'        => \$opts{'hyperlinks'},
+	'include_top_level' => \$opts{'include_top_level'},
+	'isolate_count'     => \$opts{'isolate_count'},
+	'method=s'          => \$opts{'method'},
+	'public'            => \$opts{'public'},
+	'quiet'             => \$opts{'quiet'},
+	'rank=s'            => \$opts{'rank'},
+	'rst_count'         => \$opts{'rst_count'},
+	'taxon=s'           => \$opts{'taxon'},
+	'threads=i'         => \$opts{'threads'},
+	'trees'             => \$opts{'trees'}
 ) or die("Error in command line arguments.\n");
 if ( $opts{'help'} ) {
 	show_help();
@@ -67,15 +77,14 @@ my $isolate_db = BIGSdb::Offline::Script->new(
 		options          => { always_run => 1 }
 	}
 );
+$opts{'dir'}   //= '/var/tmp/taxonomy';
 $opts{'depth'} //= 7;
 $opts{'depth'}++;
 my $methods = {
 	list_rsts     => \&list_rsts,
 	list_taxonomy => \&list_taxonomy,
-	hierarchy     => sub {
-		my $hierarchy = hierarchy( $opts{'rank'}, $opts{'taxon'}, $opts{'depth'} );
-		format_hierarchy($hierarchy);
-	  }
+	hierarchy     => \&show_hierarchy,
+	trees         => \&trees
 };
 my %valid_method = map { $_ => 1 } keys %$methods;
 die "Invalid method specified.\n" if !$valid_method{ $opts{'method'} };
@@ -103,10 +112,11 @@ sub list_rsts {
 }
 
 sub get_rsts {
-	my $data         = get_taxonomy();
+	my ( $rank, $taxon ) = @_;
+	my $data         = get_taxonomy( $rank, $taxon );
 	my @species      = sort keys %$data;
 	my $temp_table   = $seqdef_db->{'datastore'}->create_temp_list_table_from_array( 'text', \@species );
-	my $scheme_cache = RMLST_SCHEME_CACHE;
+	my $scheme_cache = 'mv_scheme_' . RMLST_SCHEME_ID;
 	return $seqdef_db->{'datastore'}->run_query(
 		"SELECT rST FROM $scheme_cache c JOIN $temp_table l ON c.species=l.value ORDER BY CAST(c.rST AS integer)",
 		undef, { fetch => 'col_arrayref' } );
@@ -123,21 +133,23 @@ sub check_valid_rank {
 }
 
 sub get_taxonomy {
+	my ( $rank, $taxon ) = @_;
+	$rank  //= $opts{'rank'};
+	$taxon //= $opts{'taxon'};
 	my $qry =
 	  q(SELECT attribute,field_value,value FROM isolate_value_extended_attributes WHERE isolate_field='species');
 	if ( $opts{'public'} ) {
 		$qry .= q( AND field_value IN (SELECT species FROM public));
 	}
-	my $args     = [];
-	my $data     = $isolate_db->{'datastore'}->run_query( $qry, $args, { fetch => 'all_arrayref', slice => {} } );
+	my $data = $isolate_db->{'datastore'}->run_query( $qry, undef, { fetch => 'all_arrayref', slice => {} } );
 	my $taxonomy = {};
 	map { $taxonomy->{ $_->{'field_value'} }->{ $_->{'attribute'} } = $_->{'value'} } @$data;
-	$opts{'rank'} //= 'species' if $opts{'taxon'};
-	if ( $opts{'rank'} ) {
+	$rank //= 'species' if $taxon;
+	if ($rank) {
 		my $filtered = {};
 		foreach my $species ( keys %$taxonomy ) {
 			$taxonomy->{$species}->{'species'} = $species;
-			next if ( $taxonomy->{$species}->{ $opts{'rank'} } // q() ) ne $opts{'taxon'} && $opts{'rank'} ne 'domain';
+			next if ( $taxonomy->{$species}->{$rank} // q() ) ne $taxon && $rank ne 'domain';
 			$filtered->{$species} = $taxonomy->{$species};
 		}
 		return $filtered;
@@ -163,7 +175,7 @@ sub get_rst_counts {
 	$taxonomy //= get_taxonomy();
 	my $rst_counts = {};
 	if ( $opts{'rst_count'} ) {
-		my $table = RMLST_SCHEME_CACHE;
+		my $table = 'mv_scheme_' . RMLST_SCHEME_ID;
 		my $rst_data =
 		  $seqdef_db->{'datastore'}
 		  ->run_query( "SELECT species,count(*) AS count FROM $table WHERE species IS NOT NULL GROUP BY species",
@@ -290,7 +302,8 @@ sub format_hierarchy_html {
 		my $term = qq($taxon);
 		local $" = q(; );
 		$term .= qq( (@values)) if @values;
-		print qq(<li data-rank="$hierarchy->{$taxon}->{'rank'}" data-taxon="$taxon"><span title="$hierarchy->{$taxon}->{'rank'}">$term</span>);
+		print qq(<li data-rank="$hierarchy->{$taxon}->{'rank'}" data-taxon="$taxon">)
+		  . qq(<span title="$hierarchy->{$taxon}->{'rank'}">$term</span>);
 		my $closing_on_new_line = 0;
 		if ( $hierarchy->{$taxon}->{'children'} ) {
 			say q(<ul>);
@@ -303,6 +316,156 @@ sub format_hierarchy_html {
 		say q(</li>);
 	}
 	say q(</ul>) if $top_level;
+	return;
+}
+
+sub show_hierarchy {
+	my $hierarchy = hierarchy( $opts{'rank'}, $opts{'taxon'}, $opts{'depth'} );
+	format_hierarchy($hierarchy);
+	return;
+}
+
+sub trees {
+	$opts{'rst_count'} = 1;
+	undef $opts{'isolate_count'};
+	my $hierarchy = hierarchy( $opts{'rank'}, $opts{'taxon'}, $opts{'depth'} );
+	generate_trees( $hierarchy, $opts{'dir'} );
+	return;
+}
+
+sub generate_trees {
+	my ( $hierarchy, $dir, $depth ) = @_;
+	$depth //= 0;
+	if ( !-d $dir ) {
+		make_path $dir or die "Failed to create path: $dir.\n";
+	}
+	make_tree( "$dir/$opts{'taxon'}.nwk", $opts{'rank'}, $opts{'taxon'} ) if $opts{'include_top_level'};
+	my $parent_dir = $dir;
+	foreach my $taxon ( sort keys %$hierarchy ) {
+		next if ( $hierarchy->{$taxon}->{'rSTs'} // 0 ) < 3;
+		my $filename = "$parent_dir/$taxon.nwk";
+		make_tree( $filename, $hierarchy->{$taxon}->{'rank'}, $taxon );
+		if ( $hierarchy->{$taxon}->{'children'} ) {
+			$dir = "$parent_dir/$taxon";
+			generate_trees( $hierarchy->{$taxon}->{'children'}, $dir, $depth + 1 );
+		}
+	}
+	return;
+}
+
+sub make_tree {
+	my ( $tree_file, $rank, $taxon ) = @_;
+	print "Tree $tree_file..." if !$opts{'quiet'};
+	my $rsts         = get_rsts( $rank, $taxon );
+	my $loci         = $seqdef_db->{'datastore'}->get_scheme_loci(RMLST_SCHEME_ID);
+	my $scheme_table = 'mv_scheme_' . RMLST_SCHEME_ID;
+	my $start        = 1;
+	my $end;
+	my $no_output = 1;
+	my $job_id    = BIGSdb::Utils::get_random();
+	my $xmfa_file = TMP_DIR . "/${job_id}.xmfa";
+	open( my $fh, '>', $xmfa_file )
+	  or $logger->error("Cannot open output file $xmfa_file for writing");
+
+	foreach my $locus_name (@$loci) {
+		my %no_seq;
+		my $locus_info   = $seqdef_db->{'datastore'}->get_locus_info($locus_name);
+		my $locus        = $seqdef_db->{'datastore'}->get_locus($locus_name);
+		my $temp         = BIGSdb::Utils::get_random();
+		my $temp_file    = "$seqdef_db->{'config'}->{secure_tmp_dir}/$temp.txt";
+		my $aligned_file = "$seqdef_db->{'config'}->{secure_tmp_dir}/$temp.aligned";
+		open( my $fh_unaligned, '>', $temp_file ) or die("Could not open temp file $temp_file.\n");
+		my $count = 0;
+
+		foreach my $id (@$rsts) {
+			$count++;
+			my $profile_data = $seqdef_db->{'datastore'}->run_query( "SELECT * FROM $scheme_table WHERE rST=?",
+				$id, { fetch => 'row_hashref', cache => 'profile_data' } );
+			my $profile_id = $profile_data->{'rst'};
+			my $header;
+			if ( defined $profile_id ) {
+				( my $species = $profile_data->{'species'} ) =~ s/\ /_/gx;
+				$header = ">$profile_id|$species";
+				my $allele_id =
+				  $seqdef_db->{'datastore'}->get_profile_allele_designation( RMLST_SCHEME_ID, $id, $locus_name )
+				  ->{'allele_id'};
+				my $allele_seq_ref = $seqdef_db->{'datastore'}->get_sequence( $locus_name, $allele_id );
+				say $fh_unaligned $header;
+				if ( $allele_id eq '0' || $allele_id eq 'N' ) {
+					say $fh_unaligned 'NNN';
+					$no_seq{$id} = 1;
+				} else {
+					say $fh_unaligned $$allele_seq_ref;
+				}
+			} else {
+				next;
+			}
+		}
+		close $fh_unaligned;
+		append_sequences(
+			{
+				fh                => $fh,
+				output_locus_name => $locus_name,
+				aligned_file      => $aligned_file,
+				temp_file         => $temp_file,
+				start             => \$start,
+				end               => \$end,
+				no_output_ref     => \$no_output,
+				no_seq            => \%no_seq
+			}
+		);
+	}
+	close $fh;
+	if ( !-e $xmfa_file ) {
+		say 'failed.' if !$opts{'quiet'};
+		return;
+	}
+	my $fasta_file = BIGSdb::Utils::xmfa2fasta($xmfa_file);
+	unlink $xmfa_file;
+	my $output_tree_file = TMP_DIR . "/$job_id.ph";
+	my $cmd              = "$seqdef_db->{'config'}->{'clustalw_path'} -tree -infile=$fasta_file > /dev/null";
+	system $cmd;
+	if ( !-e $output_tree_file ) {
+		say 'failed (no tree produced).';
+		return;
+	}
+	move( $output_tree_file, $tree_file ) || die "Copy failed.\n";
+	say 'done.' if !$opts{'quiet'};
+	unlink $fasta_file;
+	return;
+}
+
+sub append_sequences {
+	my ($args) = @_;
+	my ( $fh, $output_locus_name, $aligned_file, $temp_file, $start, $end, $no_output_ref, $no_seq ) =
+	  @{$args}{qw(fh output_locus_name aligned_file temp_file start end no_output_ref no_seq)};
+	my $output_file;
+	if ( -e $temp_file && -s $temp_file ) {
+		my $threads = $opts{'threads'} // 1;
+		system(
+			"$seqdef_db->{'config'}->{'mafft_path'} --thread $threads --quiet --preservecase $temp_file > $aligned_file"
+		);
+		$output_file = $aligned_file;
+	} else {
+		$output_file = $temp_file;
+	}
+	if ( -e $output_file && !-z $output_file ) {
+		$$no_output_ref = 0;
+		my $seq_in = Bio::SeqIO->new( -format => 'fasta', -file => $output_file );
+		while ( my $seq = $seq_in->next_seq ) {
+			my $length = $seq->length;
+			$$end = $$start + $length - 1;
+			say $fh '>' . $seq->id . ":$$start-$$end + $output_locus_name";
+			my $sequence = BIGSdb::Utils::break_line( $seq->seq, 60 );
+			( my $id = $seq->id ) =~ s/\|.*$//x;
+			$sequence =~ s/N/-/g if $no_seq->{$id};
+			say $fh $sequence;
+		}
+		$$start = ( $$end // 0 ) + 1;
+		say $fh q(=);
+	}
+	unlink $output_file;
+	unlink $temp_file;
 	return;
 }
 
@@ -321,40 +484,58 @@ ${bold}SYNOPSIS$norm
 
 ${bold}OPTIONS$norm
 
-${bold}--depth [${under}depth$norm]
-    Number of sub-ranks to show.
+${bold}--depth$norm [${under}depth$norm]
+    Number of sub-ranks to traverse.
+    
+${bold}--dir$norm [${under}directory$norm]
+    Top-level output directory for tree files. Default '/var/tmp/taxonomy'.
 
 ${bold}--help$norm
     This help page.
     
-${bold}--format [${under}format$norm]
+${bold}--format$norm [${under}format$norm]
     Either text, html. Default 'text'.
 
 ${bold}--hyperlinks$norm
     Include hyperlinks to the isolate database when generating HTML taxonomic 
     output. 
     
-${bold}--isolate_count
-	Include isolate count in output.
-      
-${bold}--rank$norm [${under}taxonomic rank$norm]
-    Either phylum, class, order, family, genus, or species. Default 'species'.
-    This is used in combination with --taxon to specify a group of organisms.
+${bold}--include_top_level$norm
+    Include top-level tree (whole bacterial domain by default).
     
-${bold}--rst_count
-	Include rST count in output.
-    
-${bold}--taxon$norm [${under}taxonomic group$norm]
-    Taxonomic group (of rank defined by --rank) or species.
+${bold}--isolate_count$norm
+    Include isolate count in output.
     
 ${bold}--method$norm [${under}method$norm]
     hierarchy: Output hierarchical list - combine with --format, --rank and 
        --taxon.
     list_taxonomy: Display defined species taxonomic values.
     list_rsts: Display list of rSTs that match specified rank/taxon.
-    
+    trees: Generate trees at each level below specified rank/taxon.
+      
 ${bold}--public$norm
     Only include species found in the public view.
+    
+${bold}--quiet$norm
+    Don't display progress messages. These are only created when generating
+    trees.
+      
+${bold}--rank$norm [${under}taxonomic rank$norm]
+    Either phylum, class, order, family, genus, or species. Default 'species'.
+    This is used in combination with --taxon to specify a group of organisms.
+    
+${bold}--rst_count$norm
+    Include rST count in output.
+    
+${bold}--taxon$norm [${under}taxonomic group$norm]
+    Taxonomic group (of rank defined by --rank) or species.
+    
+${bold}--threads$norm [${under}threads$norm]
+    Number of threads to use for MAFFT alignment.    
+    
+${bold}--trees$norm
+    Make tree files. Trees are generated from concatenated sequences for rSTs
+    only. There must >2 records in a category for a tree to be created.
         
 HELP
 	return;
