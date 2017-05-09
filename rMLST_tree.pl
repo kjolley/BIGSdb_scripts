@@ -283,10 +283,11 @@ sub format_hierarchy_text {
 }
 
 sub format_hierarchy_html {
-	my ( $hierarchy, $depth ) = @_;
+	my ( $hierarchy, $depth, $tree_file_path ) = @_;
 	my $top_level = defined $depth ? 0 : 1;
 	say q(<ul>) if $top_level;
-	$depth //= 0;
+	$depth          //= 0;
+	$tree_file_path //= "$opts{'dir'}/trees";
 	foreach my $taxon ( sort keys %$hierarchy ) {
 		my $indent = 4 * $depth + 4;
 		print q( ) x $indent;
@@ -298,7 +299,17 @@ sub format_hierarchy_html {
 				push @values, qq(isolates:$hierarchy->{$taxon}->{'isolates'});
 			}
 		}
-		push @values, qq(rSTs:$hierarchy->{$taxon}->{'rSTs'}) if $hierarchy->{$taxon}->{'rSTs'};
+		my $local_tree_file_path = $tree_file_path;
+		( my $cleaned_taxon = $taxon ) =~ s/\ /_/gx;
+		$local_tree_file_path .= "/$cleaned_taxon";
+		my $local_tree_file = "$local_tree_file_path.nwk";
+		if ( $hierarchy->{$taxon}->{'rSTs'} ) {
+			if ( -e $local_tree_file ) {
+				push @values, qq(rSTs:$hierarchy->{$taxon}->{'rSTs'} <a data-t="1">[tree]</a>);
+			} else {
+				push @values, qq(rSTs:$hierarchy->{$taxon}->{'rSTs'});
+			}
+		}
 		my $term = qq($taxon);
 		local $" = q(; );
 		$term .= qq( (@values)) if @values;
@@ -307,7 +318,7 @@ sub format_hierarchy_html {
 		my $closing_on_new_line = 0;
 		if ( $hierarchy->{$taxon}->{'children'} ) {
 			say q(<ul>);
-			format_hierarchy_html( $hierarchy->{$taxon}->{'children'}, $depth + 1 );
+			format_hierarchy_html( $hierarchy->{$taxon}->{'children'}, $depth + 1, $local_tree_file_path );
 			print q( ) x ( $indent + 2 );
 			say q(</ul>);
 			$closing_on_new_line = 1;
@@ -355,6 +366,7 @@ sub generate_trees {
 
 sub make_tree {
 	my ( $tree_file, $rank, $taxon ) = @_;
+	$tree_file =~ s/\ /_/gx;
 	print "Tree $tree_file..." if !$opts{'quiet'};
 	my $rsts         = get_rsts( $rank, $taxon );
 	my $loci         = $seqdef_db->{'datastore'}->get_scheme_loci(RMLST_SCHEME_ID);
