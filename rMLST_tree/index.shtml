@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta name="Description" content="Multilocus sequence typing (MLST) databases and software" />
+<meta name="viewport" content="width=device-width" />
+<title>Taxonomic coverage - rMLST databases - PubMLST.org</title>
+<style type="text/css" media="screen">@import "/style.css";</style>
+<style type="text/css" media="screen">@import "/bigbutton.css";</style>
+<style type="text/css" media="print">@import "/print.css";</style>
+<link type="text/css" rel="stylesheet" href="/css/font-awesome.css">
+<style type="text/css">
+  .fa-tree{color:green;text-shadow: 1px 1px 1px #999}
+  .fa-tree:hover{color:#040}
+</style>
+<link type="text/css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
+<script type="text/Javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.1/jquery.min.js"></script>
+<script type="text/Javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
+
+<script src="/pubmlst.js" type="text/Javascript"></script>
+<script type="text/Javascript">
+$(function () {
+  $('a[data-t]').html('<span class="fa fa-tree"></span>');
+  $('#jstree').jstree({
+    "plugins" : ["search"]
+  });
+
+  var rank_lookup = {};
+  rank_lookup['species']='f_species';
+  rank_lookup['phylum']='e_species||phylum';
+  rank_lookup['class']='e_species||class';
+  rank_lookup['order']='e_species||order';
+  rank_lookup['family']='e_species||family';
+  rank_lookup['genus']='e_species||genus';
+
+  $("#jstree ul").on("click","li.jstree-node a",function(){
+    if ($(this).attr('data-i')){
+      var rank = $(this).closest('li').attr('data-rank');
+      var taxon = $(this).closest('li').attr('data-taxon');
+      var url='https://pubmlst.org/bigsdb?db=pubmlst_rmlst_isolates&set_id=1&page=query&prov_field1=' + rank_lookup[rank] + '&prov_value1=' + taxon + '&submit=1';
+      window.open(url,'_blank');
+    }
+    if ($(this).attr('data-t')){
+      var path=[];
+      var el = $(this);
+      do {
+        el=el.parent().closest('li');
+        path.unshift(el.attr('data-taxon'));
+      } while(el.length!=0);
+      var tree_url='http://pubmlst.org/rmlst/taxonomy/trees'+path.join('/') + '.nwk';
+      var url='https://pubmlst.org/rmlst/taxonomy/treeviewer.shtml?url_reload=' + tree_url + '&rank=' + $(this).closest('li').attr('data-rank') + '&taxon=' + $(this).closest('li').attr('data-taxon')+'&embedded=true&appname=PubMLST_TViewer&toolbar=pztsohmr&renderer=rect&setmidpointroot=true';
+      url=url.replace(' ','_');
+      window.open(url,'_blank');
+    }
+  });
+  
+  var to = false;
+  $('#tree_search').keyup(function () {
+    if($('#tree_search').val().length<3){
+      $('#jstree').jstree(true).clear_search();			    
+      return;
+    }
+    if(to) { clearTimeout(to); }
+      to = setTimeout(function () {
+      var v = $('#tree_search').val();
+      $('#jstree').jstree(true).search(v);
+    }, 250);
+
+  });
+
+  $('#splash').hide();
+
+  $('#jstree').show();
+  $('#search').show();
+  $('#collapse').show(); 		
+});
+</script>
+</head>
+
+<body>
+<!--#include virtual="/topbar.html" -->
+
+<div class="fullwidth_content">
+<div class="panel" id="mainpanel" style="min-height:400px">
+<h1>Taxonomic coverage of the rMLST databases</h1>
+<noscript style="color:red">Please enable Javascript!</noscript>  
+<div id="splash">Please wait, loading...</div>
+<div id="search" style="display:none">
+<label for="tree_search">Search: </label>
+<input type="text" id="tree_search" value="" class="input" />
+<p>Enter a search term (at least 3 characters) - any nodes containing the term will expand.</p>
+<p>Click isolate links to view records (<a href="/site_accounts.shtml">registration required</a>). Click tree links to display Neighbour-joining tree of rSTs belonging to node - trees are pre-generated using <a href="http://birc.au.dk/software/rapidnj/">RapidNJ</a> and displayed using <a href="https://www.ncbi.nlm.nih.gov/tools/treeviewer/">NCBI Tree Viewer</a>.</p>
+</div>
+<div id="collapse" style="display:none">
+<input type="button" value="Collapse All" onclick="$('#jstree').jstree('close_all');">
+<input type="button" value="Expand All" onclick="$('#jstree').jstree('open_all');">
+</div>
+<div id="jstree" style="display:none">  
+  <!--#include virtual="taxonomy.html" -->
+</div>
+</div></div>
+
+</body>
+</html>
+

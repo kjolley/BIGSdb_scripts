@@ -306,7 +306,7 @@ sub format_hierarchy_html {
 		my $local_tree_file = "$local_tree_file_path.nwk";
 		if ( $hierarchy->{$taxon}->{'rSTs'} ) {
 			if ( -e $local_tree_file ) {
-				push @values, qq(rSTs:$hierarchy->{$taxon}->{'rSTs'} [<a data-t="1">tree</a>]);
+				push @values, qq(rSTs:$hierarchy->{$taxon}->{'rSTs'} <a data-t="1">tree</a>);
 			} else {
 				push @values, qq(rSTs:$hierarchy->{$taxon}->{'rSTs'});
 			}
