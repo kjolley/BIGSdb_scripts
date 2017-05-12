@@ -361,6 +361,7 @@ sub generate_trees {
 		make_tree( $filename, $hierarchy->{$taxon}->{'rank'}, $taxon );
 		if ( $hierarchy->{$taxon}->{'children'} ) {
 			$dir = "$parent_dir/$taxon";
+			$dir =~ s/\ /_/gx;
 			generate_trees( $hierarchy->{$taxon}->{'children'}, $dir, $depth + 1 );
 		}
 	}
