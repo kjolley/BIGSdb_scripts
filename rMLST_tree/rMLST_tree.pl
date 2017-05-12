@@ -13,7 +13,7 @@ use constant {
 	SEQDEF_DB        => 'pubmlst_rmlst_seqdef',
 	RMLST_SCHEME_ID  => 1,
 	TMP_DIR          => '/var/tmp',
-	RAPIDNJ_PATH    => '/usr/local/bin/rapidnj'
+	RAPIDNJ_PATH     => '/usr/local/bin/rapidnj'
 };
 #######End Local configuration###############################
 use lib (LIB_DIR);
@@ -46,6 +46,7 @@ GetOptions(
 	'include_top_level' => \$opts{'include_top_level'},
 	'isolate_count'     => \$opts{'isolate_count'},
 	'method=s'          => \$opts{'method'},
+	'new_only'          => \$opts{'new_only'},
 	'public'            => \$opts{'public'},
 	'quiet'             => \$opts{'quiet'},
 	'rank=s'            => \$opts{'rank'},
@@ -369,6 +370,10 @@ sub make_tree {
 	my ( $tree_file, $rank, $taxon ) = @_;
 	$tree_file =~ s/\ /_/gx;
 	print "Tree $tree_file..." if !$opts{'quiet'};
+	if ( -e $tree_file && $opts{'new_only'} ) {
+		say 'skipping.';
+		return;
+	}
 	my $rsts         = get_rsts( $rank, $taxon );
 	my $loci         = $seqdef_db->{'datastore'}->get_scheme_loci(RMLST_SCHEME_ID);
 	my $scheme_table = 'mv_scheme_' . RMLST_SCHEME_ID;
@@ -437,7 +442,9 @@ sub make_tree {
 	unlink $xmfa_file;
 	my $output_tree_file = TMP_DIR . "/$job_id.tree";
 	my $threads = $opts{'threads'} // 1;
-	my $cmd = RAPIDNJ_PATH . " $fasta_file --input-format fa --cores $threads -x $output_tree_file "
+	my $cmd =
+	    RAPIDNJ_PATH
+	  . " $fasta_file --input-format fa --cores $threads -x $output_tree_file "
 	  . '--alignment-type d > /dev/null 2>&1';
 	system $cmd;
 	if ( !-e $output_tree_file ) {
@@ -527,6 +534,9 @@ ${bold}--method$norm [${under}method$norm]
     list_taxonomy: Display defined species taxonomic values.
     list_rsts: Display list of rSTs that match specified rank/taxon.
     trees: Generate trees at each level below specified rank/taxon.
+    
+${bold}--new_only$norm
+    Only create a tree file if one does not already exist.
       
 ${bold}--public$norm
     Only include species found in the public view.
