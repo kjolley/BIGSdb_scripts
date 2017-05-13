@@ -17,8 +17,20 @@ $(function () {
   var query = getQueryParams(document.location.search);
   $("span#rank").text(query.rank);
   $("span#taxon").text(query.taxon);
-  $("div #taxon_desc").show();
+  $("div#taxon_desc").show();
+  $("div#tv").height(tvHeight());
+  $(window).resize(function(){
+      clearTimeout($.data(this, 'resizeTimer'));
+      $.data(this, 'resizeTimer', setTimeout(function() {
+          location.reload();
+      }, 200));
+  });
 });
+
+function tvHeight() {
+    var tv = $(window).height() - 200;
+    return tv;
+}
 
 function getQueryParams(qs) {
     qs = qs.split('+').join(' ');
@@ -40,16 +52,16 @@ function getQueryParams(qs) {
 <!--#include virtual="/topbar.html" -->
 
 <div class="fullwidth_content">
-<div class="panel" id="mainpanel" style="min-height:400px">
+<div class="panel" id="mainpanel" >
 <h1>rMLST Tree</h1>
 
 <div id="taxon_desc" style="display:none">
   <h2><span id="rank"></span>: <span id="taxon"></span></h2>
-  <p>Neighbor-joining tree re-constructed from concatenated rMLST alleles.</p>  
+  <p>Neighbor-joining tree re-constructed from concatenated rMLST alleles. Labels represent rST|species.</p>  
 </div>
-<noscript style="color:red">Please enable Javascript!</noscript>  
-<div id='tv' class='TreeViewerApp'>
-<a href=''></a>
+<noscript style="color:red">Please enable Javascript!</noscript>
+<div id="tv" class="TreeViewerApp">
+<a href=""></a>
 </div>
 </div></div>
 

@@ -6,7 +6,6 @@
 <meta name="viewport" content="width=device-width" />
 <title>Taxonomic coverage - rMLST databases - PubMLST.org</title>
 <style type="text/css" media="screen">@import "/style.css";</style>
-<style type="text/css" media="screen">@import "/bigbutton.css";</style>
 <style type="text/css" media="print">@import "/print.css";</style>
 <link type="text/css" rel="stylesheet" href="/css/font-awesome.css">
 <style type="text/css">
@@ -48,7 +47,7 @@ $(function () {
         path.unshift(el.attr('data-taxon'));
       } while(el.length!=0);
       var tree_url='http://pubmlst.org/rmlst/taxonomy/trees'+path.join('/') + '.nwk';
-      var url='https://pubmlst.org/rmlst/taxonomy/treeviewer.shtml?url_reload=' + tree_url + '&rank=' + $(this).closest('li').attr('data-rank') + '&taxon=' + $(this).closest('li').attr('data-taxon')+'&embedded=true&appname=PubMLST_TViewer&toolbar=pztsohmr&renderer=rect&setmidpointroot=true';
+      var url='https://pubmlst.org/rmlst/taxonomy/treeviewer.shtml?url_reload=' + tree_url + '&rank=' + $(this).closest('li').attr('data-rank') + '&taxon=' + $(this).closest('li').attr('data-taxon')+'&embedded=true&appname=PubMLST_TViewer&toolbar=pztsohmr&renderer=rect&setmidpointroot=true&zoom_on_wheel=true';
       url=url.replace(' ','_');
       window.open(url,'_blank');
     }
@@ -90,6 +89,7 @@ $(function () {
 <input type="text" id="tree_search" value="" class="input" />
 <p>Enter a search term (at least 3 characters) - any nodes containing the term will expand.</p>
 <p>Click isolate links to view records (<a href="/site_accounts.shtml">registration required</a>). Click tree links to display Neighbour-joining tree of rSTs belonging to node - trees are pre-generated using <a href="http://birc.au.dk/software/rapidnj/">RapidNJ</a> and displayed using <a href="https://www.ncbi.nlm.nih.gov/tools/treeviewer/">NCBI Tree Viewer</a>.</p>
+<p>Please note that some taxa may appear more than once in the hierarchy. This is caused by a delay in propagating changes in taxonomic placement.</p>
 </div>
 <div id="collapse" style="display:none">
 <input type="button" value="Collapse All" onclick="$('#jstree').jstree('close_all');">
