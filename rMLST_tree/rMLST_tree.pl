@@ -373,7 +373,7 @@ sub make_tree {
 	$tree_file =~ s/\ /_/gx;
 	print "Tree $tree_file..." if !$opts{'quiet'};
 	if ( -e $tree_file && $opts{'new_only'} ) {
-		say 'skipping.';
+		say 'skipping.' if !$opts{'quiet'};
 		return;
 	}
 	my $start_time        = time;
