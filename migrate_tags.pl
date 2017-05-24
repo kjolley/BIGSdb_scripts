@@ -1,7 +1,7 @@
 #!/usr/bin/perl -T
 #Move sequences, designations and tags between BIGSdb databases
 #Corresponding isolate records need to exist in both databases prior to migration.
-#Written by Keith Jolley 2011-2016
+#Written by Keith Jolley 2011-2017
 use strict;
 use warnings;
 use 5.010;
@@ -35,13 +35,14 @@ LOG
 Log::Log4perl->init( \$log_conf );
 my $logger = Log::Log4perl::get_logger('BIGSdb.Script');
 my %opts;
-getopts( 'a:b:i:j:hqn', \%opts );
+getopts( 'a:b:i:j:u:hqn', \%opts );
 if ( $opts{'h'} ) {
 	show_help();
 	exit;
 }
-if ( any { !$opts{$_} } qw (a b i j) ) {
-	say qq(Usage: migrate_tags.pl -a <source database config> -b <destination database config> -i <id> -j <id>\n);
+if ( any { !$opts{$_} } qw (a b i j u) ) {
+	say
+qq(Usage: migrate_tags.pl -a <source database config> -b <destination database config> -i <id> -j <id> -u <user>\n);
 	say q(Help: migrate_tags.pl -h);
 	exit;
 }
@@ -62,11 +63,13 @@ my $script = BIGSdb_Scripts::Migrate->new(
 );
 my $i = $opts{'i'};    #source isolate id
 my $j = $opts{'j'};    #destination isolate id
+my $u = $opts{'u'};    #User id
 
 #Do some checks before actually doing anything
 die "This script should only be called on isolate databases.\n" if any { $_ ne 'isolates' } $script->get_db_types;
 die "Source isolate id must be an integer.\n"              if !BIGSdb::Utils::is_int($i);
 die "Destination isolate id must be an integer.\n"         if !BIGSdb::Utils::is_int($j);
+die "User id must be an integer.\n"                        if !BIGSdb::Utils::is_int($u);
 die "Isolate id does not exist in source database.\n"      if !$script->isolate_exists_in_source($i);
 die "Isolate id does not exist in destination database.\n" if !$script->isolate_exists_in_destination($j);
 main();
@@ -82,12 +85,6 @@ sub main {
 		$j, { db => $script->{'db2'}->{ $opts{'b'} } } );
 	die "Isolate in destination database already has allele designations set.\n"
 	  if $designations_exist_in_destination && !$opts{'n'};
-	my $missing_users = $script->get_missing_designation_users_in_destination($i);
-	if ( keys %$missing_users ) {
-		print "Missing sender/curator in destination database:\n";
-		print "$missing_users->{$_}\n" foreach keys %$missing_users;
-		exit;
-	}
 	if ( !$opts{'n'} ) {
 		my $designations =
 		  $script->{'datastore'}->run_query( 'SELECT * FROM allele_designations WHERE isolate_id=? ORDER BY locus',
@@ -100,11 +97,9 @@ sub main {
 			if ( $script->is_locus_in_destination( $des->{'locus'} ) ) {
 				eval {
 					$sql->execute(
-						$j,                                           $des->{'locus'},
-						$des->{'allele_id'},                          $script->{'user_map'}->{ $des->{'sender'} },
-						$des->{'status'},                             $des->{'method'},
-						$script->{'user_map'}->{ $des->{'curator'} }, $des->{'date_entered'},
-						$des->{'datestamp'},                          $des->{'comments'}
+						$j,                  $des->{'locus'},  $des->{'allele_id'}, $u,
+						$des->{'status'},    $des->{'method'}, $u,                  $des->{'date_entered'},
+						$des->{'datestamp'}, $des->{'comments'}
 					);
 				};
 				if ($@) {
@@ -127,11 +122,9 @@ sub main {
 	foreach my $seq (@$sequences) {
 		eval {
 			$sql->execute(
-				$j,                                           $seq->{'sequence'},
-				$seq->{'method'},                             $seq->{'original_designation'},
-				$seq->{'comments'},                           $script->{'user_map'}->{ $seq->{'sender'} },
-				$script->{'user_map'}->{ $seq->{'curator'} }, $seq->{'date_entered'},
-				$seq->{'datestamp'}
+				$j,                             $seq->{'sequence'},     $seq->{'method'},
+				$seq->{'original_designation'}, $seq->{'comments'},     $u,
+				$u,                             $seq->{'date_entered'}, $seq->{'datestamp'}
 			);
 		};
 		my ($last_seqbin_id) = $sql->fetchrow_array;
@@ -153,10 +146,10 @@ sub main {
 			if ( $script->is_locus_in_destination( $allele_seq->{'locus'} ) ) {
 				eval {
 					$sql->execute(
-						$sequence_map{ $allele_seq->{'seqbin_id'} },         $allele_seq->{'locus'},
-						$allele_seq->{'start_pos'},                          $allele_seq->{'end_pos'},
-						$allele_seq->{'reverse'},                            $allele_seq->{'complete'},
-						$script->{'user_map'}->{ $allele_seq->{'curator'} }, $allele_seq->{'datestamp'}
+						$sequence_map{ $allele_seq->{'seqbin_id'} }, $allele_seq->{'locus'},
+						$allele_seq->{'start_pos'},                  $allele_seq->{'end_pos'},
+						$allele_seq->{'reverse'},                    $allele_seq->{'complete'},
+						$u,                                          $allele_seq->{'datestamp'}
 					);
 					my ($new_id) = $sql->fetchrow_array;
 					if ($new_id) {
@@ -186,10 +179,7 @@ sub main {
 		foreach my $flag (@$flags) {
 			if ( $script->is_locus_in_destination( $flag->{'locus'} ) ) {
 				eval {
-					$sql->execute(
-						$allele_sequence_map{ $flag->{'id'} },         $flag->{'flag'},
-						$script->{'user_map'}->{ $flag->{'curator'} }, $flag->{'datestamp'}
-					);
+					$sql->execute( $allele_sequence_map{ $flag->{'id'} }, $flag->{'flag'}, $u, $flag->{'datestamp'} );
 				};
 				if ($@) {
 					$script->{'db2'}->{ $opts{'b'} }->rollback;
@@ -224,7 +214,7 @@ Options
 -j <id>    Destination database isolate id.
 -n         Don't transfer tags
 -q         Quiet
-
+-u <id>    User id for sender/curator
 
 HELP
 	return;

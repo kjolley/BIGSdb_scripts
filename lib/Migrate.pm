@@ -21,7 +21,6 @@ sub run_script {
 			  if $self->{'system2'}->{$_}->{'dbtype'} ne 'isolates';
 		}
 	}
-	$self->{'user_map'} = $self->_map_users;
 	return;
 }
 
@@ -64,37 +63,6 @@ sub _db_connect {
 	return;
 }
 
-sub _map_users {
-
-	#Map users based on first and surnames.
-	#Assumes that there is only one site-wide database.
-	my ($self) = @_;
-	my $db1_users = $self->{'datastore'}
-	  ->run_query( 'SELECT * FROM users ORDER BY id', undef, { fetch => 'all_arrayref', slice => {} } );
-	my $sql =
-	  $self->{'db2'}->{ $self->{'options'}->{'b'} }
-	  ->prepare('SELECT id, user_name FROM users WHERE first_name=? AND surname=?');
-	my $sql_is_common_site_user = $self->{'db2'}->{ $self->{'options'}->{'b'} }
-	  ->prepare('SELECT id FROM users WHERE user_name=? AND user_db IS NOT NULL');
-	my $map;
-	foreach my $db1_user (@$db1_users) {
-		eval { $sql->execute( $db1_user->{'first_name'}, $db1_user->{'surname'} ) };
-		$self->{'logger'}->error($@) if $@;
-		my $db2_user = $sql->fetchrow_hashref;
-		if ( $db2_user->{'user_name'} ) {
-			$map->{ $db1_user->{'id'} } = $db2_user->{'id'};
-		} else {
-			eval { $sql_is_common_site_user->execute( $db1_user->{'user_name'} ) };
-			$self->{'logger'}->error($@) if $@;
-			my ($common_user) = $sql_is_common_site_user->fetchrow_array;
-			if ($common_user) {
-				$map->{ $db1_user->{'id'} } = $common_user;
-			}
-		}
-	}
-	return $map;
-}
-
 sub get_db_types {
 	my ($self) = @_;
 	return ( $self->{'system'}->{'dbtype'}, $self->{'system2'}->{ $self->{'options'}->{'b'} }->{'dbtype'} );
@@ -102,7 +70,7 @@ sub get_db_types {
 
 sub locus_exists_in_destination {
 	my ( $self, $locus ) = @_;
-	my $exists = $self->{'datastore'}->run_query( "SELECT EXISTS(SELECT * FROM loci WHERE id=?)",
+	my $exists = $self->{'datastore'}->run_query( 'SELECT EXISTS(SELECT * FROM loci WHERE id=?)',
 		$locus,
 		{ db => $self->{'db2'}->{ $self->{'options'}->{'b'} }, cache => 'Migrate::locus_exisgts_in_destination' } );
 	return $exists;
@@ -110,76 +78,25 @@ sub locus_exists_in_destination {
 
 sub locus_exists_in_source {
 	my ( $self, $locus ) = @_;
-	my $exists = $self->{'datastore'}->run_query( "SELECT EXISTS(SELECT * FROM loci WHERE id=?)",
+	my $exists = $self->{'datastore'}->run_query( 'SELECT EXISTS(SELECT * FROM loci WHERE id=?)',
 		$locus, { cache => 'Migrate::locus_exists_in_source' } );
 	return $exists;
 }
 
-sub _get_missing_curator_in_locus_tables {
-	my ( $self, $locus ) = @_;
-	my %bad_users;
-	my @list;
-	foreach my $table (
-		qw (loci locus_extended_attributes locus_aliases locus_descriptions locus_links locus_refs locus_curators))
-	{
-		my $curators = $self->{'datastore'}->run_query(
-			"SELECT DISTINCT "
-			  . ( $table eq 'locus_curators' ? 'curator_id' : 'curator' )
-			  . " FROM $table WHERE "
-			  . ( $table eq 'loci' ? 'id' : 'locus' ) . "=?",
-			$locus,
-			{ fetch => 'col_arrayref' }
-		);
-		push @list, @$curators;
-	}
-	foreach ( uniq(@list) ) {
-		my $user_info = $self->{'datastore'}->get_user_info($_);
-		$bad_users{$_} = "$user_info->{'surname'}, $user_info->{'first_name'}" if !defined $self->{'user_map'}->{$_};
-	}
-	return \%bad_users;
-}
 
-sub get_missing_allele_seq_users_in_destination {
-	my ( $self, $locus ) = @_;
-	my $senders =
-	  $self->{'datastore'}
-	  ->run_query( "SELECT DISTINCT sender FROM sequences WHERE locus=?", $locus, { fetch => 'col_arrayref' } );
-	my $curators =
-	  $self->{'datastore'}
-	  ->run_query( "SELECT DISTINCT curator FROM sequences WHERE locus=?", $locus, { fetch => 'col_arrayref' } );
-	my %bad_users;
-	foreach ( uniq( @$senders, @$curators ) ) {
-		my $user_info = $self->{'datastore'}->get_user_info($_);
-		$bad_users{$_} = "$user_info->{'surname'}, $user_info->{'first_name'}" if !defined $self->{'user_map'}->{$_};
-	}
-	return \%bad_users;
-}
 
-sub get_missing_designation_users_in_destination {
-	my ( $self, $isolate_id ) = @_;
-	my $senders = $self->{'datastore'}->run_query( "SELECT DISTINCT sender FROM allele_designations WHERE isolate_id=?",
-		$isolate_id, { fetch => 'col_arrayref' } );
-	my $curators =
-	  $self->{'datastore'}->run_query( "SELECT DISTINCT curator FROM allele_designations WHERE isolate_id=?",
-		$isolate_id, { fetch => 'col_arrayref' } );
-	my %bad_users;
-	foreach ( uniq( @$senders, @$curators ) ) {
-		my $user_info = $self->{'datastore'}->get_user_info($_);
-		$bad_users{$_} = "$user_info->{'surname'}, $user_info->{'first_name'}" if !defined $self->{'user_map'}->{$_};
-	}
-	return \%bad_users;
-}
+
 
 sub is_locus_in_scheme {
 	my ( $self, $locus ) = @_;
-	my $in_scheme = $self->{'datastore'}->run_query( "SELECT EXISTS(SELECT * FROM scheme_members WHERE locus=?)",
+	my $in_scheme = $self->{'datastore'}->run_query( 'SELECT EXISTS(SELECT * FROM scheme_members WHERE locus=?)',
 		$locus, { cache => 'Migrate::is_locus_in_scheme' } );
 	return $in_scheme;
 }
 
 sub is_locus_in_destination {
 	my ( $self, $locus ) = @_;
-	my $in_destination = $self->{'datastore'}->run_query( "SELECT EXISTS(SELECT * FROM loci WHERE id=?)",
+	my $in_destination = $self->{'datastore'}->run_query( 'SELECT EXISTS(SELECT * FROM loci WHERE id=?)',
 		$locus, { db => $self->{'db2'}->{ $self->{'options'}->{'b'} }, cache => 'Migrate::is_locus_in_destination' } );
 	return $in_destination;
 }
@@ -189,10 +106,6 @@ sub copy_locus {
 	die "Locus $locus does not exist in database $self->{'options'}->{'a'}\n" if !$self->locus_exists_in_source($locus);
 	die "Locus $locus already exists in database $self->{'options'}->{'b'}\n"
 	  if $self->locus_exists_in_destination($locus);
-	die "Missing users in database $self->{'options'}->{'b'}"
-	  if keys %{ $self->get_missing_allele_seq_users_in_destination($locus) };
-	die "Missing users in database $self->{'options'}->{'b'}"
-	  if keys %{ $self->_get_missing_curator_in_locus_tables($locus) };
 	die "Locus $locus is a member of a scheme.\n" if $self->is_locus_in_scheme($locus);
 	local $" = ',';
 	eval {
@@ -203,11 +116,11 @@ sub copy_locus {
 			my $attr = $self->{'datastore'}->get_table_field_attributes($table);
 			my $data =
 			  $self->{'datastore'}
-			  ->run_query( "SELECT * FROM $table WHERE " . ( $table eq 'loci' ? 'id' : 'locus' ) . "=?",
+			  ->run_query( 'SELECT * FROM $table WHERE ' . ( $table eq 'loci' ? 'id' : 'locus' ) . '=?',
 				$locus, { fetch => 'row_hashref' } );
 			if ( ref $data eq 'HASH' ) {
-				$data->{'curator'}    = $self->{'user_map'}->{ $data->{'curator'} }    if defined $data->{'curator'};
-				$data->{'curator_id'} = $self->{'user_map'}->{ $data->{'curator_id'} } if defined $data->{'curator_id'};
+				$data->{'curator'}    = $self->{'options'}->{'u'}    if defined $data->{'curator'};
+				$data->{'curator_id'} = $self->{'options'}->{'u'} if defined $data->{'curator_id'};
 				foreach (@$attr) {
 					push @fields,       $_->{'name'};
 					push @placeholders, '?';
@@ -249,7 +162,7 @@ sub copy_alleles {
 			$sql_get->{$table}->execute($locus);
 			while ( my $data = $sql_get->{$table}->fetchrow_hashref ) {
 				foreach (qw(curator sender)) {
-					$data->{$_} = $self->{'user_map'}->{ $data->{$_} } if defined $data->{$_};
+					$data->{$_} = $self->{'options'}->{'u'} if defined $data->{$_};
 				}
 				my @copy_data;
 				push @copy_data, $data->{$_} foreach @{ $fields->{$table} };
@@ -269,11 +182,11 @@ sub copy_alleles {
 sub update_locus_fields_in_clients {
 	my ( $self, $locus ) = @_;
 	return if !$self->{'options'}->{'c'};
-	my @client_dbs = split /,/, $self->{'options'}->{'c'};
+	my @client_dbs = split /,/x, $self->{'options'}->{'c'};
 	foreach my $client (@client_dbs) {
 		my $new_name   = $self->{'system2'}->{ $self->{'options'}->{'b'} }->{'db'};
 		my $old_name   = $self->{'system'}->{'db'};
-		my $sql        = $self->{'db2'}->{$client}->prepare("UPDATE loci SET dbase_name=? WHERE id=? AND dbase_name=?");
+		my $sql        = $self->{'db2'}->{$client}->prepare('UPDATE loci SET dbase_name=? WHERE id=? AND dbase_name=?');
 		my $old_config = $self->{'options'}->{'a'};
 		my $new_config = $self->{'options'}->{'b'};
 		my $sql2 =
@@ -296,8 +209,8 @@ sub update_locus_fields_in_clients {
 
 sub delete_locus_from_source {
 	my ( $self, $locus ) = @_;
-	my $sql  = $self->{'db'}->prepare("DELETE FROM sequences WHERE locus=?");
-	my $sql2 = $self->{'db'}->prepare("DELETE FROM loci WHERE id=?");
+	my $sql  = $self->{'db'}->prepare('DELETE FROM sequences WHERE locus=?');
+	my $sql2 = $self->{'db'}->prepare('DELETE FROM loci WHERE id=?');
 	eval {
 		$sql->execute($locus);
 		$sql2->execute($locus);
@@ -330,7 +243,7 @@ sub clone_locus {
 			$sql_get->execute($locus);
 			my $data = $sql_get->fetchrow_hashref;
 			if ( defined $data->{'curator'} ) {
-				$data->{'curator'} = $self->{'user_map'}->{ $data->{'curator'} };
+				$data->{'curator'} = $self->{'options'}->{'u'};
 				my @copy_data;
 				push @copy_data, $data->{$_} foreach @fields;
 				$sql_put->execute(@copy_data);

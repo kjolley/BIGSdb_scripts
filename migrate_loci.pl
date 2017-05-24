@@ -58,19 +58,6 @@ foreach my $locus(@loci){
 	die "Locus $locus does not exist in database $opts{'a'}.\n" if !$script->locus_exists_in_source($locus);	
 	die "Locus $locus already exists in database $opts{'b'}.\n" if $script->locus_exists_in_destination($locus);
 	die "Locus $locus is a member of a scheme.\n" if $script->is_locus_in_scheme($locus);
-	my $missing_users = $script->get_missing_allele_seq_users_in_destination($locus);
-	my $missing_locus_curators = $script->_get_missing_curator_in_locus_tables($locus);
-	local $" = "\n";
-	if (keys %$missing_users){
-		print "Missing users in destination database:\n";
-		print "$missing_users->{$_}\n" foreach keys %$missing_users;
-		exit;
-	}
-	if (keys %$missing_locus_curators){
-		print "Missing locus curators in destination database:\n";
-		print "$missing_locus_curators->{$_}\n" foreach keys %$missing_locus_curators;
-		exit;
-	}
 }
 
 foreach my $locus(@loci){
