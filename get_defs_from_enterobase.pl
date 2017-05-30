@@ -164,17 +164,56 @@ sub check_alleles {
 	return;
 }
 
+#BIGSdb doesn't allows locus names to begin with an underscore or a digit.
+sub get_mapped_loci {
+	return {
+		'93282_00335'  => '_93282_00335',
+		'93282_01680'  => '_93282_01680',
+		'93282_01824'  => '_93282_01824',
+		'93282_01825'  => '_93282_01825',
+		'93282_02692'  => '_93282_02692',
+		'93282_02869'  => '_93282_02869',
+		'93282_02880'  => '_93282_02880',
+		'93282_02906'  => '_93282_02906',
+		'93282_02907'  => '_93282_02907',
+		'93282_03486'  => '_93282_03486',
+		'93282_03487'  => '_93282_03487',
+		'93282_03488'  => '_93282_03488',
+		'EP-D108_gp14' => 'EP_D108_gp14',
+		'EP-D108_gp15' => 'EP_D108_gp15',
+		'EP-D108_gp19' => 'EP_D108_gp19',
+		'EP-D108_gp31' => 'EP_D108_gp31',
+		'EP-D108_gp38' => 'EP_D108_gp38',
+		'EP-D108_gp41' => 'EP_D108_gp41',
+		'EP-D108_gp42' => 'EP_D108_gp42',
+		'EP-D108_gp57' => 'EP_D108_gp57',
+		'O96-HN_00746' => 'O96_HN_00746',
+		'O96-HN_00747' => 'O96_HN_00747',
+		'O96-HN_00748' => 'O96_HN_00748',
+		'O96-HN_01860' => 'O96_HN_01860',
+		'O96-HN_01861' => 'O96_HN_01861',
+		'O96-HN_02062' => 'O96_HN_02062',
+		'O96-HN_02063' => 'O96_HN_02063',
+		'O96-HN_02064' => 'O96_HN_02064',
+		'O96-HN_03653' => 'O96_HN_03653',
+		'O96-HN_03657' => 'O96_HN_03657',
+	};
+}
+
 sub update_alleles {
 	check_options(qw(d e s));
-	my $loci = get_loci();
+	my $loci        = get_loci();
+	my $mapped_loci = get_mapped_loci();
   LOCUS: foreach my $locus (@$loci) {
 		next LOCUS if $opts{'locus_regex'} && $locus !~ /$opts{'locus_regex'}/x;
+		my $locus_name = $mapped_loci->{$locus} // $locus;
 		my $existing_alleles =
 		  $script->{'datastore'}->run_query( 'SELECT allele_id,sequence FROM sequences WHERE locus=?',
-			$locus, { fetch => 'all_arrayref', cache => 'get_all_alleles' } );
+			$locus_name, { fetch => 'all_arrayref', cache => 'get_all_alleles' } );
 		next if @$existing_alleles && $opts{'n'};
 		my %existing = map { $_->[0] => $_->[1] } @$existing_alleles;
 		my %existing_seqs = map { Digest::MD5::md5_hex( $_->[1] ) => $_->[0] } @$existing_alleles;
+		
 		my $url = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/alleles?locus=$locus";
 		$url .= "&limit=$opts{'limit'}" if $opts{'limit'};
 		my %already_received;
@@ -218,7 +257,7 @@ sub update_alleles {
 							'INSERT INTO sequences (locus,allele_id,sequence,status,date_entered,'
 							  . 'datestamp,sender,curator) VALUES (?,?,?,?,?,?,?,?)',
 							undef,
-							$locus,
+							$locus_name,
 							$allele->{'allele_id'},
 							$new_seq,
 							'unchecked',
@@ -380,7 +419,7 @@ sub check_options {
 sub get_loci {
 	die "No scheme selected.\n" if !$opts{'s'};
 	check_options(qw(e s));
-	my $url  = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/loci?limit=10000";
+	my $url  = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/loci?limit=50000";
 	my $resp = $ua->get($url);
 	if ( $resp->is_success ) {
 		my $data        = decode_json( $resp->decoded_content );
