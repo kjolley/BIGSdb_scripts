@@ -41,6 +41,9 @@ sub main {
 		my $out_file      = "$script->{'config'}->{'secure_tmp_dir'}/${prefix}_analysis.txt";
 		make_taxonomy_file( $taxonomy_file, $results );
 		make_scan_file( $scan_file, $results );
+		my ( $unlinked_matches, $total_matches ) = count_unlinked_matches($results);
+
+		#		say "Unlinked matches: $unlinked_matches";
 		my @params = (
 			-in       => $scan_file,
 			-taxonomy => $taxonomy_file,
@@ -50,10 +53,11 @@ sub main {
 		my $command = ANALYSIS_SCRIPT . qq( @params >/dev/null 2>&1);
 		eval { system($command); };
 		$logger->error($@) if $@;
-
 		if ( -e $out_file ) {
 			my $analysis = BIGSdb::Utils::slurp($out_file);
-			parse_analysis($analysis);
+
+			#say qq(<div class="box resultspanel"><pre>$$analysis</pre></div>);
+			parse_analysis( $analysis, $unlinked_matches, $total_matches );
 		}
 		say $results->{'html'};
 		unlink $taxonomy_file, $scan_file, $out_file, "${out_file}.info";
@@ -77,7 +81,7 @@ sub get_colour {
 }
 
 sub parse_analysis {
-	my ($analysis) = @_;
+	my ( $analysis, $unlinked_matches, $total_matches ) = @_;
 	my @ranks = qw(phylum class order family genus species);
 	my @lines = split /\n/x, $$analysis;
 	my @matches;
@@ -97,7 +101,15 @@ sub parse_analysis {
 		}
 		my $exc_match = 100 * ( $record[7] / TOTAL_LOCI );
 		$exc_match = 100 if $exc_match > 100;
-		my $support = $record[8] >= $exc_match ? $record[8] : $exc_match;
+		my $percent_unlinked;
+		my $percent_support_across_all = $record[8];
+		if ($total_matches) {
+			$percent_unlinked = 100 * ( $unlinked_matches / $total_matches );
+			$percent_support_across_all -= $percent_unlinked;
+			$percent_support_across_all = 0 if $percent_support_across_all < 0;
+		}
+#		say "Exl match: $exc_match<br />% exclusive across all $record[8]<br />Total matches: $total_matches<br />";
+		my $support = $percent_support_across_all >= $exc_match ? $percent_support_across_all : $exc_match;
 		push @matches,
 		  {
 			rank     => $record[3],
@@ -130,6 +142,23 @@ sub parse_analysis {
 	}
 	say q(</div>);
 	return;
+}
+
+sub count_unlinked_matches {
+	my ($results) = @_;
+	my @loci      = keys %{ $results->{'exact_matches'} };
+	my $unlinked  = 0;
+	my $matches   = 0;
+	foreach my $locus (@loci) {
+		my $alleles = $results->{'linked_data'}->{$locus};
+		next if !ref $alleles;
+		foreach my $allele_id ( keys %$alleles ) {
+			my $allele_species = $alleles->{$allele_id}->{'species'};
+			$unlinked++ if !$allele_species;
+			$matches++;
+		}
+	}
+	return ( $unlinked, $matches );
 }
 
 sub make_scan_file {
