@@ -55,8 +55,7 @@ sub main {
 		$logger->error($@) if $@;
 		if ( -e $out_file ) {
 			my $analysis = BIGSdb::Utils::slurp($out_file);
-
-			#say qq(<div class="box resultspanel"><pre>$$analysis</pre></div>);
+			say qq(<div class="box resultspanel" id="debug"><pre>$$analysis</pre></div>) if $results->{'debug'};
 			parse_analysis( $analysis, $unlinked_matches, $total_matches );
 		}
 		say $results->{'html'};
@@ -108,7 +107,8 @@ sub parse_analysis {
 			$percent_support_across_all -= $percent_unlinked;
 			$percent_support_across_all = 0 if $percent_support_across_all < 0;
 		}
-#		say "Exl match: $exc_match<br />% exclusive across all $record[8]<br />Total matches: $total_matches<br />";
+
+		#		say "Exl match: $exc_match<br />% exclusive across all $record[8]<br />Total matches: $total_matches<br />";
 		my $support = $percent_support_across_all >= $exc_match ? $percent_support_across_all : $exc_match;
 		push @matches,
 		  {
