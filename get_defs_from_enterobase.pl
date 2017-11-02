@@ -73,6 +73,7 @@ if ( $opts{'d'} ) {
 }
 local $| = 1;
 main();
+undef $script;
 
 sub main {
 	my %methods = (
@@ -213,7 +214,6 @@ sub update_alleles {
 		next if @$existing_alleles && $opts{'n'};
 		my %existing = map { $_->[0] => $_->[1] } @$existing_alleles;
 		my %existing_seqs = map { Digest::MD5::md5_hex( $_->[1] ) => $_->[0] } @$existing_alleles;
-		
 		my $url = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/alleles?locus=$locus";
 		$url .= "&limit=$opts{'limit'}" if $opts{'limit'};
 		my %already_received;
@@ -298,16 +298,17 @@ sub update_profiles {
 	}
 	my $existing_profiles =
 	  $script->{'datastore'}
-	  ->run_query( qq(SELECT ST,@$loci FROM mv_scheme_$opts{'scheme_id'}), undef, { fetch => 'all_arrayref' } );
-	my $existing = {};
-	foreach my $profiles (@$existing_profiles) {
-		my $st = shift @$profiles;
+	  ->run_query( qq(SELECT ST,profile FROM mv_scheme_$opts{'scheme_id'}), undef, { fetch => 'all_arrayref' } );
+	my $positions = $script->{'datastore'}->get_scheme_locus_indices( $opts{'scheme_id'} );
+	my $existing  = {};
+	foreach my $st_profile (@$existing_profiles) {
+		my ( $st, $profile ) = @$st_profile;
 		foreach my $locus (@$loci) {
-			$existing->{$st}->{$locus} = shift @$profiles;
+			$existing->{$st}->{$locus} = $profile->[ $positions->{$locus} ];
 		}
 	}
-	my $url = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/sts";
-	$url .= "?limit=$opts{'limit'}" if $opts{'limit'};
+	my $url = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/sts?show_alleles=true";
+	$url .= "&limit=$opts{'limit'}" if $opts{'limit'};
 	my %already_received;
   PAGE: while (1) {
 		my $resp = $ua->get($url);
@@ -317,7 +318,8 @@ sub update_profiles {
 			say $resp->decoded_content;
 			last PAGE;
 		}
-		my $data     = decode_json( $resp->decoded_content );
+		my $data = decode_json( $resp->decoded_content );
+		
 		my $profiles = $data->{'STs'};
 	  PROFILE: foreach my $profile (@$profiles) {
 			my $st = $profile->{'ST_id'};
@@ -331,13 +333,17 @@ sub update_profiles {
 			foreach my $allele (@$alleles) {
 				$alleles{ $allele->{'locus'} } = $allele->{'allele_id'};
 			}
+			next PROFILE if keys %alleles != @$loci;
 			if ( $existing->{$st} ) {
 				my $changed;
 				foreach my $locus (@$loci) {
+
+					#					say "$locus $alleles{$locus} $existing->{$st}->{$locus}";
 					$changed = 1 if $alleles{$locus} ne $existing->{$st}->{$locus};
 				}
 				if ($changed) {
 					say "ST-$st has changed!";
+					exit;
 				}
 				next PROFILE;
 			} else {
@@ -380,7 +386,6 @@ sub update_profiles {
 			last PAGE;
 		}
 	}
-	$script->{'db'}->do("SELECT refresh_matview('mv_scheme_$opts{'scheme_id'}')");
 	$script->{'db'}->commit;
 	return;
 }
