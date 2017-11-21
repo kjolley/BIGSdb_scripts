@@ -157,6 +157,7 @@ sub get_taxonomy {
 		}
 		return $filtered;
 	}
+	$isolate_db->{'db'}->commit;    #Prevent idle in transaction locks
 	return $taxonomy;
 }
 
@@ -376,11 +377,11 @@ sub make_tree {
 		say 'skipping.' if !$opts{'quiet'};
 		return;
 	}
-	my $start_time        = time;
+	my $start_time   = time;
 	my $rsts         = get_rsts( $rank, $taxon );
 	my $loci         = $seqdef_db->{'datastore'}->get_scheme_loci(RMLST_SCHEME_ID);
 	my $scheme_table = 'mv_scheme_' . RMLST_SCHEME_ID;
-	my $start   = 1;
+	my $start        = 1;
 	my $end;
 	my $no_output = 1;
 	my $job_id    = BIGSdb::Utils::get_random();
@@ -455,7 +456,7 @@ sub make_tree {
 		return;
 	}
 	move( $output_tree_file, $tree_file ) || die "Copy failed.\n";
-	my $duration = get_nice_duration( time-$start_time );
+	my $duration = get_nice_duration( time - $start_time );
 	say "done ($duration)." if !$opts{'quiet'};
 	unlink $fasta_file;
 	return;
