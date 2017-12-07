@@ -1,7 +1,7 @@
 #!/usr/bin/perl -T
 #Cross-reference loci in sequence definition database with those
 #in annotated reference
-#Written by Keith Jolley 2014
+#Written by Keith Jolley 2014-2017
 use strict;
 use warnings;
 use 5.010;
@@ -10,10 +10,10 @@ use constant {
 	CONFIG_DIR       => '/etc/bigsdb',
 	LIB_DIR          => '/usr/local/lib',
 	DBASE_CONFIG_DIR => '/etc/bigsdb/dbases',
-	HOST             => 'zoo-oban',
-	PORT             => 5432,
-	USER             => 'apache',
-	PASSWORD         => '',
+	HOST             => undef,
+	PORT             => undef,
+	USER             => undef,
+	PASSWORD         => undef,
 	BLAST_PATH       => '/usr/bin'
 };
 #######End Local configuration###############################
@@ -21,6 +21,7 @@ use lib (LIB_DIR);
 use Getopt::Long qw(:config no_ignore_case);
 use Term::Cap;
 use POSIX;
+use Carp;
 use Bio::SeqIO;
 use Bio::DB::GenBank;
 use BIGSdb::Offline::Script;
@@ -38,7 +39,7 @@ my $log_conf = q(
 );
 Log::Log4perl->init( \$log_conf );
 my $logger = Log::Log4perl::get_logger('BIGSdb.Script');
-( my $script_name = $0 ) =~ s/.*\///;
+( my $script_name = $0 ) =~ s/.*\///x;
 say "Command: $script_name @ARGV\n";
 my %opts;
 GetOptions(
@@ -62,12 +63,12 @@ if ( $opts{'h'} ) {
 	exit;
 }
 if ( !$opts{'d'} ) {
-	say "Usage: xref_loci.pl --database <seqdef db config>";
-	say "Help: xref_loci.pl --help";
+	say 'Usage: xref_loci.pl --database <seqdef db config>';
+	say 'Help: xref_loci.pl --help';
 	exit;
 }
 if ( !$opts{'a'} && !$opts{'u'} ) {
-	say "You must specify an accession using --accession or --upload_accession.";
+	say 'You must specify an accession using --accession or --upload_accession.';
 	exit(1);
 }
 my $EXIT = 0;
@@ -75,7 +76,7 @@ local @SIG{qw (INT TERM HUP)} = ( sub { $EXIT = 1 } ) x 3;    #Allow temp files 
 $opts{'A'} //= 99;
 $opts{'B'} //= 99;
 my $accession_name = $opts{'a'} // $opts{'u'};
-$accession_name =~ s/\..+$//;
+$accession_name =~ s/\..+$//x;
 my $seq_obj;
 
 if ( $opts{'u'} ) {
@@ -175,7 +176,7 @@ sub parse_blast_local {
 	my @matching_loci;
 	my %seen;
 	while ( my $line = <$fh> ) {
-		my @data = split /\t/, $line;
+		my @data = split /\t/x, $line;
 		my ( $allele_id, $match_locus, $identity, $alignment ) = @data[ 0 .. 3 ];
 		my $allele_seq = $script->{'datastore'}->get_sequence( $locus, $allele_id );
 		my $allele_length = length $$allele_seq;
@@ -197,11 +198,11 @@ sub parse_blast_accession {
 	my @matching_loci;
 	my %seen;
 	while ( my $line = <$fh> ) {
-		my @data = split /\t/, $line;
+		my @data = split /\t/x, $line;
 		my ( $match_allele, $identity, $alignment ) = @data[ 1 .. 3 ];
 		my $allele_length     = length $cds->{'seq'};
 		my $percent_alignment = ( $alignment / $allele_length ) * 100;
-		( my $match_locus = $match_allele ) =~ s/::.*$//;
+		( my $match_locus = $match_allele ) =~ s/::.*$//x;
 		if ( $percent_alignment >= $opts{'A'} && $identity >= $opts{'B'} ) {
 			push @matching_loci, $match_locus if !$seen{$match_locus};
 			$seen{$match_locus} = 1;
@@ -216,11 +217,11 @@ sub make_fasta_from_database {
 	my ($loci)   = @_;
 	my $prefix   = BIGSdb::Utils::get_random();
 	my $filename = "$prefix.fas";
-	open( my $fh, '>', $filename ) || die "Can't create temporary file $filename";
+	open( my $fh, '>', $filename ) || croak "Cannot create temporary file $filename";
 	foreach my $locus (@$loci) {
 		my $sequences =
 		  $script->{'datastore'}
-		  ->run_query( "SELECT allele_id,sequence FROM sequences WHERE locus=? AND locus IN (SELECT id FROM loci WHERE data_type='DNA')",
+		  ->run_query( q(SELECT allele_id,sequence FROM sequences WHERE locus=? AND locus IN (SELECT id FROM loci WHERE data_type='DNA')),
 			$locus, { fetch => 'all_arrayref', slice => {}, cache => 'make_fasta_from_database' } );
 		foreach (@$sequences) {
 			say $fh ">$locus" . '::' . $_->{'allele_id'};
@@ -235,7 +236,7 @@ sub make_locus_fasta_from_accession {
 	my ($cds)    = @_;
 	my $prefix   = BIGSdb::Utils::get_random();
 	my $filename = "$prefix . fas";
-	open( my $fh, '>', $filename ) || die " Can't create temporary file $filename";
+	open( my $fh, '>', $filename ) || croak " Cannot create temporary file $filename";
 	say $fh ">$cds->{'id'}";
 	say $fh $cds->{'seq'};
 	close $fh;
@@ -246,7 +247,7 @@ sub make_fasta_from_accession {
 	my $cds      = get_cds($seq_obj);
 	my $prefix   = BIGSdb::Utils::get_random();
 	my $filename = "$prefix.fas";
-	open( my $fh, '>', $filename ) || die " Can't create temporary file $filename";
+	open( my $fh, '>', $filename ) || croak " Cannot create temporary file $filename";
 	foreach (@$cds) {
 		say $fh ">$_->{'id'}";
 		say $fh $_->{'seq'};
@@ -257,10 +258,10 @@ sub make_fasta_from_accession {
 
 sub make_fasta_from_locus {
 	my ($locus) = @_;
-	my $sequences = $script->{'datastore'}->run_query( "SELECT allele_id,sequence FROM sequences WHERE locus = ? ORDER BY allele_id",
+	my $sequences = $script->{'datastore'}->run_query( 'SELECT allele_id,sequence FROM sequences WHERE locus = ? ORDER BY allele_id',
 		$locus, { fetch => 'all_arrayref', slice => {} } );
 	my $filename = "$locus.fas";
-	open( my $fh, '>', $filename ) || die "Can't create $filename";
+	open( my $fh, '>', $filename ) || croak "Cannot create $filename";
 	foreach (@$sequences) {
 		say $fh ">$_->{'allele_id'}";
 		say $fh $_->{'sequence'};
@@ -284,7 +285,12 @@ sub get_cds {
 				}
 			}
 			local $" = '|';
-			push @$seqs, { id => $locus, seq => $cds->seq->seq };
+			eval {
+				push @$seqs, { id => $locus, seq => $cds->seq->seq };
+			};
+			if ($@){
+				say "Cannot extract $locus\n";
+			} 
 		}
 	}
 	return $seqs;
