@@ -118,8 +118,8 @@ sub initiate_script_object {
 
 sub check_alleles {
 	check_options(qw(e s));
-	my $loci  = get_loci();
-	my $first = 1;
+	my $loci     = get_loci();
+	my $first    = 1;
 	my $infinity = 9**99;
   LOCUS: foreach my $locus (@$loci) {
 		my ( $allele_count, $complete_cds, $min_length, $max_length ) = ( 0, 0, $infinity, 0 );
@@ -167,6 +167,28 @@ sub check_alleles {
 
 #BIGSdb doesn't allows locus names to begin with an underscore or a digit.
 sub get_mapped_loci {
+	if ( $opts{'e'} eq 'yersinia' ) {
+		return {
+			adk  => 'Yersinia_pseudotuberculosis_MLST_adk',
+			argA => 'Yersinia_pseudotuberculosis_MLST_argA',
+			aroA => 'Yersinia_pseudotuberculosis_MLST_aroA',
+			glnA => 'Yersinia_pseudotuberculosis_MLST_glnA',
+			thrA => 'Yersinia_pseudotuberculosis_MLST_thrA',
+			tmk  => 'Yersinia_pseudotuberculosis_MLST_tmk',
+			trpE => 'Yersinia_pseudotuberculosis_MLST_trpE'
+		};
+	} elsif ( $opts{'e'} eq 'mcatarrhalis' ) {
+		return {
+			abcZ    => 'Moraxella_catarrhalis_MLST_abcZ',
+			adk     => 'Moraxella_catarrhalis_MLST_adk',
+			efp     => 'Moraxella_catarrhalis_MLST_efp',
+			fumC    => 'Moraxella_catarrhalis_MLST_fumC',
+			glyBeta => 'Moraxella_catarrhalis_MLST_glyBeta',
+			mutY    => 'Moraxella_catarrhalis_MLST_mutY',
+			ppa     => 'Moraxella_catarrhalis_MLST_ppa',
+			trpE    => 'Moraxella_catarrhalis_MLST_trpE'
+		};
+	}
 	return {
 		'93282_00335'  => '_93282_00335',
 		'93282_01680'  => '_93282_01680',
@@ -288,12 +310,14 @@ sub update_alleles {
 
 sub update_profiles {
 	check_options(qw(d e s scheme_id));
-	my $loci = get_loci();
+	my $loci        = get_loci();
+	my $mapped_loci = get_mapped_loci();
 	local $" = q(,);
 	my $existing_alleles = {};
 	foreach my $locus (@$loci) {
+		my $locus_name = $mapped_loci->{$locus} // $locus;
 		my $allele_ids = $script->{'datastore'}->run_query( 'SELECT allele_id FROM sequences WHERE locus=?',
-			$locus, { fetch => 'col_arrayref', cache => 'get_all_allele_ids' } );
+			$locus_name, { fetch => 'col_arrayref', cache => 'get_all_allele_ids' } );
 		%{ $existing_alleles->{$locus} } = map { $_ => 1 } @$allele_ids;
 	}
 	my $existing_profiles =
@@ -304,7 +328,8 @@ sub update_profiles {
 	foreach my $st_profile (@$existing_profiles) {
 		my ( $st, $profile ) = @$st_profile;
 		foreach my $locus (@$loci) {
-			$existing->{$st}->{$locus} = $profile->[ $positions->{$locus} ];
+			my $locus_name = $mapped_loci->{$locus} // $locus;
+			$existing->{$st}->{$locus} = $profile->[ $positions->{$locus_name} ];
 		}
 	}
 	my $url = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/sts?show_alleles=true";
@@ -318,8 +343,7 @@ sub update_profiles {
 			say $resp->decoded_content;
 			last PAGE;
 		}
-		my $data = decode_json( $resp->decoded_content );
-		
+		my $data     = decode_json( $resp->decoded_content );
 		my $profiles = $data->{'STs'};
 	  PROFILE: foreach my $profile (@$profiles) {
 			my $st = $profile->{'ST_id'};
@@ -337,6 +361,7 @@ sub update_profiles {
 			if ( $existing->{$st} ) {
 				my $changed;
 				foreach my $locus (@$loci) {
+					my $locus_name = $mapped_loci->{$locus} // $locus;
 
 					#					say "$locus $alleles{$locus} $existing->{$st}->{$locus}";
 					$changed = 1 if $alleles{$locus} ne $existing->{$st}->{$locus};
@@ -348,6 +373,7 @@ sub update_profiles {
 				next PROFILE;
 			} else {
 				foreach my $locus (@$loci) {
+					my $locus_name = $mapped_loci->{$locus} // $locus;
 					if ( !$existing_alleles->{$locus}->{ $alleles{$locus} } ) {
 						say "Cannot insert ST-$st - $locus-$alleles{$locus} is not defined!";
 						next PROFILE;
@@ -366,10 +392,11 @@ sub update_profiles {
 						undef, $opts{'scheme_id'}, $st, 'ST', $st, UPDATE_USER, 'now'
 					);
 					foreach my $locus (@$loci) {
+						my $locus_name = $mapped_loci->{$locus} // $locus;
 						$script->{'db'}->do(
 							'INSERT INTO profile_members (scheme_id,locus,profile_id,allele_id,'
 							  . 'curator,datestamp) VALUES (?,?,?,?,?,?)',
-							undef, $opts{'scheme_id'}, $locus, $st, $alleles{$locus}, UPDATE_USER, 'now'
+							undef, $opts{'scheme_id'}, $locus_name, $st, $alleles{$locus}, UPDATE_USER, 'now'
 						);
 					}
 				};
