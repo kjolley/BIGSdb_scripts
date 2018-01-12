@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #Wrapper script for rMLST database species identifier code.
-#Written by Keith Jolley, 2017.
+#Written by Keith Jolley, 2018
 use strict;
 use warnings;
 use 5.010;
@@ -22,8 +22,8 @@ use lib (LIB_DIR);
 use JSON;
 use BIGSdb::Offline::Script;
 use BIGSdb::Utils;
-Log::Log4perl->init( CONFIG_DIR . '/logging.conf' );
-my $logger = Log::Log4perl::get_logger('BIGSdb.Page');
+Log::Log4perl->init( CONFIG_DIR . '/rest_logging.conf' );
+my $logger = Log::Log4perl::get_logger('BIGSdb.Rest');
 my $script = get_script_obj();
 main();
 undef $script;
@@ -42,8 +42,6 @@ sub main {
 		make_taxonomy_file( $taxonomy_file, $results );
 		make_scan_file( $scan_file, $results );
 		my ( $unlinked_matches, $total_matches ) = count_unlinked_matches($results);
-
-		#		say "Unlinked matches: $unlinked_matches";
 		my @params = (
 			-in       => $scan_file,
 			-taxonomy => $taxonomy_file,
@@ -55,10 +53,9 @@ sub main {
 		$logger->error($@) if $@;
 		if ( -e $out_file ) {
 			my $analysis = BIGSdb::Utils::slurp($out_file);
-			say qq(<div class="box resultspanel" id="debug"><pre>$$analysis</pre></div>) if $results->{'debug'};
-			parse_analysis( $analysis, $unlinked_matches, $total_matches );
+			my $output = parse_analysis( $analysis, $unlinked_matches, $total_matches );
+			say encode_json($output);
 		}
-		say $results->{'html'};
 		unlink $taxonomy_file, $scan_file, $out_file, "${out_file}.info";
 		return;
 	}
@@ -66,17 +63,21 @@ sub main {
 	return;
 }
 
-sub get_colour {
-	my ($num) = @_;
-	my ( $min, $max, $middle ) = ( 0, 100, 50 );
-	my $scale = 255 / ( $middle - $min );
-	return q(FF0000) if $num <= $min;    # lower boundry
-	return q(00FF00) if $num >= $max;    # upper boundary
-	if ( $num < $middle ) {
-		return sprintf q(FF%02X00) => int( ( $num - $min ) * $scale );
-	} else {
-		return sprintf q(%02XFF00) => 255 - int( ( $num - $middle ) * $scale );
+sub count_unlinked_matches {
+	my ($results) = @_;
+	my @loci      = keys %{ $results->{'exact_matches'} };
+	my $unlinked  = 0;
+	my $matches   = 0;
+	foreach my $locus (@loci) {
+		my $locus_matches = $results->{'exact_matches'}->{$locus};
+		next if !ref $locus_matches;
+		foreach my $match (@$locus_matches) {
+			my $allele_species = $match->{'linked_data'}->{'rMLST genome database'}->{'species'};
+			$unlinked++ if !$allele_species;
+			$matches++;
+		}
 	}
+	return ( $unlinked, $matches );
 }
 
 sub parse_analysis {
@@ -96,7 +97,7 @@ sub parse_analysis {
 			last if !$rank_values[$i];
 			$tax_string .= ' > ' if $i;
 			$rank_values[$i] = '[unclassified]' if $rank_values[$i] eq 'NULL';
-			$tax_string .= qq(<span title="$ranks[$i]" style="cursor:pointer"><i>$rank_values[$i]</i></span>);
+			$tax_string .= qq($rank_values[$i]);
 		}
 		my $exc_match = 100 * ( $record[7] / TOTAL_LOCI );
 		$exc_match = 100 if $exc_match > 100;
@@ -107,8 +108,6 @@ sub parse_analysis {
 			$percent_support_across_all -= $percent_unlinked;
 			$percent_support_across_all = 0 if $percent_support_across_all < 0;
 		}
-
-		#		say "Exl match: $exc_match<br />% exclusive across all $record[8]<br />Total matches: $total_matches<br />";
 		my $support = $percent_support_across_all >= $exc_match ? $percent_support_across_all : $exc_match;
 		push @matches,
 		  {
@@ -119,46 +118,7 @@ sub parse_analysis {
 		  };
 		@matches = sort { $b->{'support'} <=> $a->{'support'} || $a->{'taxon'} cmp $b->{'taxon'} } @matches;
 	}
-	say q(<div class="box resultstable">);
-	say q(<h2>Predicted taxa</h2>);
-	if (@matches) {
-		say q(<table class="resultstable"><th>Rank</th><th>Taxon</th>)
-		  . q(<th>Support</th>)
-		  . q(<th>Taxonomy</th></tr>);
-		my $td = 1;
-		foreach my $match (@matches) {
-			say qq(<tr class="td$td">);
-			say qq(<td>$match->{$_}</td>) foreach qw(rank taxon);
-			my $colour = get_colour( $match->{'support'} );
-			say qq(<td><div style="display:block-inline;margin-top:0.2em;background-color:\#$colour;)
-			  . qq(border:1px solid #ccc;height:0.8em;width:$match->{'support'}%"></span></td>);
-			say qq(<td style="text-align:left">$match->{'taxonomy'}</td>);
-			say q(</tr>);
-			$td = $td == 1 ? 2 : 1;
-		}
-		say q(</table>);
-	} else {
-		say q(<p>None.</p>);
-	}
-	say q(</div>);
-	return;
-}
-
-sub count_unlinked_matches {
-	my ($results) = @_;
-	my @loci      = keys %{ $results->{'exact_matches'} };
-	my $unlinked  = 0;
-	my $matches   = 0;
-	foreach my $locus (@loci) {
-		my $alleles = $results->{'linked_data'}->{$locus};
-		next if !ref $alleles;
-		foreach my $allele_id ( keys %$alleles ) {
-			my $allele_species = $alleles->{$allele_id}->{'species'};
-			$unlinked++ if !$allele_species;
-			$matches++;
-		}
-	}
-	return ( $unlinked, $matches );
+	return \@matches;
 }
 
 sub make_scan_file {
@@ -166,13 +126,14 @@ sub make_scan_file {
 	my @loci = keys %{ $results->{'exact_matches'} };
 	open( my $fh, '>', $filename ) || $logger->error("Cannot open $filename for writing.");
 	foreach my $locus (@loci) {
-		my $alleles = $results->{'linked_data'}->{$locus};
-		next if !ref $alleles;
-		foreach my $allele_id ( keys %$alleles ) {
-			my $allele_species = $alleles->{$allele_id}->{'species'};
+		my $matches = $results->{'exact_matches'}->{$locus};
+		next if !ref $matches;
+		foreach my $match (@$matches) {
+			my $allele_species = $match->{'linked_data'}->{'rMLST genome database'}->{'species'};
 			next if !$allele_species;
+			my $allele_id = $match->{'allele_id'};
 			foreach my $species (@$allele_species) {
-				say $fh qq($locus\t$allele_id\t$species);
+				say $fh qq($locus\t$allele_id\t$species->{'value'});
 			}
 		}
 	}
@@ -182,13 +143,14 @@ sub make_scan_file {
 
 sub make_taxonomy_file {
 	my ( $filename, $results ) = @_;
-	my @loci = keys %{ $results->{'linked_data'} };
+	my @loci = keys %{ $results->{'exact_matches'} };
 	my %species;
 	foreach my $locus (@loci) {
-		foreach my $allele_id ( keys %{ $results->{'linked_data'}->{$locus} } ) {
-			my $allele_species = $results->{'linked_data'}->{$locus}->{$allele_id}->{'species'};
+		foreach my $match ( @{ $results->{'exact_matches'}->{$locus} } ) {
+			my $allele_id      = $match->{'allele_id'};
+			my $allele_species = $match->{'linked_data'}->{'rMLST genome database'}->{'species'};
 			next if !$allele_species;
-			$species{$_} = 1 foreach @$allele_species;
+			$species{ $_->{'value'} } = 1 foreach @$allele_species;
 		}
 	}
 	my $temp_table = $script->{'datastore'}->create_temp_list_table_from_array( 'text', [ keys %species ] );
