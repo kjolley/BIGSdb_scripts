@@ -127,7 +127,10 @@ sub parse_analysis {
 			say qq(<tr class="td$td">);
 			say qq(<td>$match->{$_}</td>) foreach qw(rank taxon);
 			my $colour = get_colour( $match->{'support'} );
-			say qq(<td><div style="display:block-inline;margin-top:0.2em;background-color:\#$colour;)
+			say
+			  q(<td style="text-align:left"><span style="position:absolute;margin-left:1em;font-size:0.8em">)
+			  . qq($match->{'support'}%</span>);
+			say qq(<div style="display:block-inline;margin-top:0.2em;background-color:\#$colour;)
 			  . qq(border:1px solid #ccc;height:0.8em;width:$match->{'support'}%"></span></td>);
 			say qq(<td style="text-align:left">$match->{'taxonomy'}</td>);
 			say q(</tr>);
