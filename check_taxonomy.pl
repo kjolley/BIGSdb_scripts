@@ -56,7 +56,7 @@ sub main {
 		if ( -e $out_file ) {
 			my $analysis = BIGSdb::Utils::slurp($out_file);
 			say qq(<div class="box resultspanel" id="debug"><pre>$$analysis</pre></div>) if $results->{'debug'};
-			parse_analysis( $analysis, $unlinked_matches, $total_matches );
+			parse_analysis( $analysis, $total_matches );
 		}
 		say $results->{'html'};
 		unlink $taxonomy_file, $scan_file, $out_file, "${out_file}.info";
@@ -80,7 +80,7 @@ sub get_colour {
 }
 
 sub parse_analysis {
-	my ( $analysis, $unlinked_matches, $total_matches ) = @_;
+	my ( $analysis, $total_matches ) = @_;
 	my @ranks = qw(phylum class order family genus species);
 	my @lines = split /\n/x, $$analysis;
 	my @matches;
@@ -98,18 +98,15 @@ sub parse_analysis {
 			$rank_values[$i] = '[unclassified]' if $rank_values[$i] eq 'NULL';
 			$tax_string .= qq(<span title="$ranks[$i]" style="cursor:pointer"><i>$rank_values[$i]</i></span>);
 		}
-		my $exc_match = 100 * ( $record[7] / TOTAL_LOCI );
-		$exc_match = 100 if $exc_match > 100;
-		my $percent_unlinked;
 		my $percent_support_across_all = $record[8];
+		my $allele_matches             = $record[9];
+		my $support;
 		if ($total_matches) {
-			$percent_unlinked = 100 * ( $unlinked_matches / $total_matches );
-			$percent_support_across_all -= $percent_unlinked;
-			$percent_support_across_all = 0 if $percent_support_across_all < 0;
+			my $percent_linked_allele_matches = ( 100 * $allele_matches ) / $total_matches;
+			$support = ( $percent_support_across_all * $percent_linked_allele_matches ) / 100;
+		} else {
+			$support = 0;
 		}
-
-		#		say "Exl match: $exc_match<br />% exclusive across all $record[8]<br />Total matches: $total_matches<br />";
-		my $support = $percent_support_across_all >= $exc_match ? $percent_support_across_all : $exc_match;
 		push @matches,
 		  {
 			rank     => $record[3],

@@ -51,9 +51,10 @@ sub main {
 		my $command = ANALYSIS_SCRIPT . qq( @params >/dev/null 2>&1);
 		eval { system($command); };
 		$logger->error($@) if $@;
+
 		if ( -e $out_file ) {
 			my $analysis = BIGSdb::Utils::slurp($out_file);
-			my $output = parse_analysis( $analysis, $unlinked_matches, $total_matches );
+			my $output = parse_analysis( $analysis, $total_matches );
 			say encode_json($output);
 		}
 		unlink $taxonomy_file, $scan_file, $out_file, "${out_file}.info";
@@ -81,7 +82,7 @@ sub count_unlinked_matches {
 }
 
 sub parse_analysis {
-	my ( $analysis, $unlinked_matches, $total_matches ) = @_;
+	my ( $analysis, $total_matches ) = @_;
 	my @ranks = qw(phylum class order family genus species);
 	my @lines = split /\n/x, $$analysis;
 	my @matches;
@@ -99,16 +100,15 @@ sub parse_analysis {
 			$rank_values[$i] = '[unclassified]' if $rank_values[$i] eq 'NULL';
 			$tax_string .= qq($rank_values[$i]);
 		}
-		my $exc_match = 100 * ( $record[7] / TOTAL_LOCI );
-		$exc_match = 100 if $exc_match > 100;
-		my $percent_unlinked;
 		my $percent_support_across_all = $record[8];
+		my $allele_matches             = $record[9];
+		my $support;
 		if ($total_matches) {
-			$percent_unlinked = 100 * ( $unlinked_matches / $total_matches );
-			$percent_support_across_all -= $percent_unlinked;
-			$percent_support_across_all = 0 if $percent_support_across_all < 0;
+			my $percent_linked_allele_matches = ( 100 * $allele_matches ) / $total_matches;
+			$support = ( $percent_support_across_all * $percent_linked_allele_matches ) / 100;
+		} else {
+			$support = 0;
 		}
-		my $support = $percent_support_across_all >= $exc_match ? $percent_support_across_all : $exc_match;
 		push @matches,
 		  {
 			rank     => $record[3],
