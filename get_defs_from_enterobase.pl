@@ -367,8 +367,10 @@ sub update_profiles {
 					$changed = 1 if $alleles{$locus} ne $existing->{$st}->{$locus};
 				}
 				if ($changed) {
-					say "ST-$st has changed!";
-					exit;
+					say "ST-$st has changed! Deleting old version";
+					$script->{'db'}
+					  ->do( 'DELETE FROM profiles WHERE (scheme_id,profile_id)=(?,?)', undef, $opts{'scheme_id'}, $st )
+					  ;
 				}
 				next PROFILE;
 			} else {
