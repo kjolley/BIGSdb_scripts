@@ -7,7 +7,7 @@
 <title>Taxonomic coverage - rMLST databases - PubMLST.org</title>
 <style type="text/css" media="screen">@import "/style.css";</style>
 <style type="text/css" media="print">@import "/print.css";</style>
-<link type="text/css" rel="stylesheet" href="/css/font-awesome.css">
+<link type="text/css" rel="stylesheet" href="/css/fontawesome-all.css">
 <style type="text/css">
   .fa-tree{color:green;text-shadow: 1px 1px 1px #999}
   .fa-tree:hover{color:#040}
