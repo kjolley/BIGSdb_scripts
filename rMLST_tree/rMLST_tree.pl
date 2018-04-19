@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #Generate trees from rMLST profile data.
-#Written by Keith Jolley, 2017
+#Written by Keith Jolley, 2017-2018
 use strict;
 use warnings;
 use 5.010;
@@ -24,6 +24,7 @@ use Term::Cap;
 use File::Path qw(make_path);
 use File::Copy;
 use Bio::SeqIO;
+use JSON;
 use POSIX qw{strftime};
 use constant RANKS => qw(genus family order class phylum);
 
@@ -257,12 +258,13 @@ sub hierarchy {
 sub format_hierarchy {
 	my ($hierarchy) = @_;
 	$opts{'format'} //= 'text';
-	my %allowed_formats = map { $_ => 1 } qw(text html);
+	my %allowed_formats = map { $_ => 1 } qw(text html json);
 	if ( !$allowed_formats{ $opts{'format'} } ) {
 		die "Invalid format selected.\n";
 	}
 	format_hierarchy_text($hierarchy) if $opts{'format'} eq 'text';
 	format_hierarchy_html($hierarchy) if $opts{'format'} eq 'html';
+	format_hierarchy_json($hierarchy) if $opts{'format'} eq 'json';
 	return;
 }
 
@@ -331,6 +333,55 @@ sub format_hierarchy_html {
 		say q(</li>);
 	}
 	say q(</ul>) if $top_level;
+	return;
+}
+
+sub format_hierarchy_json {
+	my ( $hierarchy, $depth, $tree_file_path ) = @_;
+	my $top_level = defined $depth ? 0 : 1;
+	say q([) if $top_level;
+	$depth          //= 0;
+	$tree_file_path //= "$opts{'dir'}/trees";
+	my $first = 1;
+	foreach my $taxon ( sort keys %$hierarchy ) {
+		say q(,) if !$first;
+		$first = 0;
+		my $indent = 4 * $depth + 4;
+		print q( ) x $indent;
+		my @values = (
+			qq("data":{"\$angularWidth":$hierarchy->{$taxon}->{'isolates'},"\$color":"#B2ABF4"}),
+			qq("id":"$hierarchy->{$taxon}->{'rank'}/$taxon"),
+			qq("name":"$taxon")
+		);
+		if ( $hierarchy->{$taxon}->{'isolates'} ) {
+			push @values, qq("isolates":$hierarchy->{$taxon}->{'isolates'});
+		}
+		my $local_tree_file_path = $tree_file_path;
+		( my $cleaned_taxon = $taxon ) =~ s/\ /_/gx;
+		$local_tree_file_path .= "/$cleaned_taxon";
+		my $local_tree_file = "$local_tree_file_path.nwk";
+		if ( $hierarchy->{$taxon}->{'rSTs'} ) {
+			push @values, qq("rSTs":$hierarchy->{$taxon}->{'rSTs'});
+		}
+#		my $term = qq($taxon);
+		local $" = q(,);
+		print qq({@values);
+#		print qq(<li data-rank="$hierarchy->{$taxon}->{'rank'}" data-taxon="$taxon">)
+#		  . qq(<span title="$hierarchy->{$taxon}->{'rank'}">$term</span>);
+		
+		my $closing_on_new_line = 0;
+		if ( $hierarchy->{$taxon}->{'children'} ) {
+			say q(,"children":[);
+			format_hierarchy_json( $hierarchy->{$taxon}->{'children'}, $depth + 1, $local_tree_file_path );
+			print q( ) x ( $indent + 2 );
+			say q(]);
+			$closing_on_new_line = 1;
+		}
+		print q( ) x $indent if $closing_on_new_line;
+		print q(});
+		
+	}
+	say q(];) if $top_level;
 	return;
 }
 
@@ -526,7 +577,7 @@ ${bold}--help$norm
     This help page.
     
 ${bold}--format$norm [${under}format$norm]
-    Either text, html. Default 'text'.
+    Either text, html or json. Default 'text'.
 
 ${bold}--hyperlinks$norm
     Include hyperlinks to the isolate database when generating HTML taxonomic 
