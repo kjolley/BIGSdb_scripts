@@ -1,6 +1,6 @@
 #!/usr/bin/perl 
 #Written by Keith Jolley
-#Copyright (c) 2016-2017, University of Oxford
+#Copyright (c) 2016-2018, University of Oxford
 #E-mail: keith.jolley@zoo.ox.ac.uk
 #
 #This program is free software: you can redistribute it and/or modify
@@ -54,6 +54,7 @@ GetOptions(
 	'p|update_profiles' => \$opts{'p'},
 	'r|route=s'         => \$opts{'r'},
 	'n|new_loci'        => \$opts{'n'},
+	'no_errors'         => \$opts{'no_errors'},
 	's|scheme=s'        => \$opts{'s'},
 	'scheme_id=i'       => \$opts{'scheme_id'}
 ) or die("Error in command line arguments\n");
@@ -369,15 +370,14 @@ sub update_profiles {
 				if ($changed) {
 					say "ST-$st has changed! Deleting old version";
 					$script->{'db'}
-					  ->do( 'DELETE FROM profiles WHERE (scheme_id,profile_id)=(?,?)', undef, $opts{'scheme_id'}, $st )
-					  ;
+					  ->do( 'DELETE FROM profiles WHERE (scheme_id,profile_id)=(?,?)', undef, $opts{'scheme_id'}, $st );
 				}
 				next PROFILE;
 			} else {
 				foreach my $locus (@$loci) {
 					my $locus_name = $mapped_loci->{$locus} // $locus;
 					if ( !$existing_alleles->{$locus}->{ $alleles{$locus} } ) {
-						say "Cannot insert ST-$st - $locus-$alleles{$locus} is not defined!";
+						say "Cannot insert ST-$st - $locus-$alleles{$locus} is not defined!" if !$opts{'no_errors'};
 						next PROFILE;
 					}
 				}
@@ -526,6 +526,10 @@ ${bold}--locus_regex$norm ${under}REGEX$norm
     
 ${bold}-n, --new_loci$norm
     Only download new loci (those without any existing alleles defined).
+    
+${bold}--no_errors$norm
+    Silently ignore insertion errors caused by profiles being defined on
+    Enterobase for which no alleles are defined.
     
 ${bold}-p, --update_profiles$norm
     Update allelic profiles.
