@@ -45,6 +45,7 @@ my %opts;
 GetOptions(
 	'a|update_alleles'  => \$opts{'a'},
 	'check_alleles'     => \$opts{'check_alleles'},
+	'commit'            => \$opts{'commit'},
 	'd|database=s'      => \$opts{'d'},
 	'e|enterobase_db=s' => \$opts{'e'},
 	'l|loci'            => \$opts{'l'},
@@ -54,6 +55,7 @@ GetOptions(
 	'p|update_profiles' => \$opts{'p'},
 	'r|route=s'         => \$opts{'r'},
 	'n|new_loci'        => \$opts{'n'},
+	'm|allow_missing'   => \$opts{'allow_missing'},
 	'no_errors'         => \$opts{'no_errors'},
 	's|scheme=s'        => \$opts{'s'},
 	'scheme_id=i'       => \$opts{'scheme_id'}
@@ -301,6 +303,7 @@ sub update_alleles {
 			if ( @$alleles && $data->{'paging'}->{'next'} ) {
 				$url = $data->{'paging'}->{'next'};
 			} else {
+				$script->{'db'}->commit if $opts{'commit'};
 				last PAGE;
 			}
 		}
@@ -358,7 +361,15 @@ sub update_profiles {
 			foreach my $allele (@$alleles) {
 				$alleles{ $allele->{'locus'} } = $allele->{'allele_id'};
 			}
-			next PROFILE if keys %alleles != @$loci;
+			if ( keys %alleles != @$loci ) {
+				if ( $opts{'allow_missing'} ) {
+					foreach my $locus (@$loci) {
+						$alleles{$locus} //= 'N';
+					}
+				} else {
+					next PROFILE;
+				}
+			}
 			if ( $existing->{$st} ) {
 				my $changed;
 				foreach my $locus (@$loci) {
@@ -395,6 +406,7 @@ sub update_profiles {
 					);
 					foreach my $locus (@$loci) {
 						my $locus_name = $mapped_loci->{$locus} // $locus;
+						$alleles{$locus} = 'N' if $alleles{$locus} eq '0';
 						$script->{'db'}->do(
 							'INSERT INTO profile_members (scheme_id,locus,profile_id,allele_id,'
 							  . 'curator,datestamp) VALUES (?,?,?,?,?,?)',
@@ -409,9 +421,12 @@ sub update_profiles {
 				}
 			}
 		}
-		if ( @$profiles && $data->{'paging'}->{'next'} ) {
-			$url = $data->{'paging'}->{'next'};
+		if ( @$profiles && $data->{'links'}->{'paging'}->{'next'} ) {
+			$url = $data->{'links'}->{'paging'}->{'next'};
+			$url .= q(&show_alleles=true);
+			$script->{'db'}->commit if $opts{'commit'};
 		} else {
+			
 			last PAGE;
 		}
 	}
@@ -506,13 +521,16 @@ ${bold}--check_alleles$norm
     in cgMLST schemes as most alleles should be complete CDS.
     Cannot be used with --update_alleles.
     
+${bold}--commit$norm
+    Commit after every download page.
+    
 ${bold}-d, --database$norm ${under}NAME$norm
     Database configuration name.
 
 ${bold}-e, --enterobase_db$norm ${under}DBASE$norm
     Enterobase database name.
 
-${bold}-h, --help$norm.
+${bold}-h, --help$norm
     This help page.
     
 ${bold}-l, --loci$norm
@@ -523,6 +541,10 @@ ${bold}--limit$norm ${under}LIMIT$norm
     
 ${bold}--locus_regex$norm ${under}REGEX$norm
     Restrict updated loci to those that match regular expression. 
+    
+${bold}-m, --allow_missing$norm
+    Allow profile definitions with missing loci - an N will be used for the
+    missing alleles.
     
 ${bold}-n, --new_loci$norm
     Only download new loci (those without any existing alleles defined).
