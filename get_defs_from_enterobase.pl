@@ -28,6 +28,7 @@ use MIME::Base64;
 use JSON;
 use Digest::MD5;
 use Data::Dumper qw(Dumper);
+use Time::HiRes qw(usleep);
 ###########Local configuration################################
 use constant {
 	CONFIG_DIR       => '/etc/bigsdb',
@@ -150,6 +151,7 @@ sub check_alleles {
 				$min_length = $length if $length < $min_length;
 				$max_length = $length if $length > $max_length;
 			}
+			usleep(500_000);    #Rate-limiting
 			if ( @$alleles && $data->{'paging'}->{'next'} ) {
 				$url = $data->{'paging'}->{'next'};
 			} else {
@@ -230,6 +232,7 @@ sub update_alleles {
 	check_options(qw(d e s));
 	my $loci        = get_loci();
 	my $mapped_loci = get_mapped_loci();
+	usleep(500_000);    #Rate-limiting
   LOCUS: foreach my $locus (@$loci) {
 		next LOCUS if $opts{'locus_regex'} && $locus !~ /$opts{'locus_regex'}/x;
 		my $locus_name = $mapped_loci->{$locus} // $locus;
@@ -300,6 +303,7 @@ sub update_alleles {
 					$existing_seqs{ Digest::MD5::md5_hex( $allele->{'seq'} ) } = $allele->{'allele_id'};
 				}
 			}
+			usleep(500_000);    #Rate-limiting
 			if ( @$alleles && $data->{'paging'}->{'next'} ) {
 				$url = $data->{'paging'}->{'next'};
 			} else {
@@ -316,6 +320,7 @@ sub update_profiles {
 	check_options(qw(d e s scheme_id));
 	my $loci        = get_loci();
 	my $mapped_loci = get_mapped_loci();
+	usleep(500_000);    #Rate-limiting
 	local $" = q(,);
 	my $existing_alleles = {};
 	foreach my $locus (@$loci) {
@@ -421,12 +426,12 @@ sub update_profiles {
 				}
 			}
 		}
+		usleep(500_000);    #Rate-limiting
 		if ( @$profiles && $data->{'links'}->{'paging'}->{'next'} ) {
 			$url = $data->{'links'}->{'paging'}->{'next'};
 			$url .= q(&show_alleles=true);
 			$script->{'db'}->commit if $opts{'commit'};
 		} else {
-			
 			last PAGE;
 		}
 	}
