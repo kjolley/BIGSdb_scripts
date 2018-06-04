@@ -246,6 +246,7 @@ sub update_alleles {
 		$url .= "&limit=$opts{'limit'}" if $opts{'limit'};
 		my %already_received;
 	  PAGE: while (1) {
+	  		usleep(500_000);    #Rate-limiting
 			my $resp = $ua->get($url);
 			if ( !$resp->is_success ) {
 				say $url;
