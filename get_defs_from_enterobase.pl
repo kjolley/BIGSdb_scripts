@@ -34,7 +34,6 @@ use constant {
 	CONFIG_DIR       => '/etc/bigsdb',
 	LIB_DIR          => '/usr/local/lib',
 	DBASE_CONFIG_DIR => '/etc/bigsdb/dbases',
-	UPDATE_USER      => 3
 };
 my $SERVER_ADDRESS = 'https://enterobase.warwick.ac.uk/api/v2.0';
 my $TOKEN_FILE     = "$ENV{'HOME'}/.enterobase_token";
@@ -59,7 +58,8 @@ GetOptions(
 	'm|allow_missing'   => \$opts{'allow_missing'},
 	'no_errors'         => \$opts{'no_errors'},
 	's|scheme=s'        => \$opts{'s'},
-	'scheme_id=i'       => \$opts{'scheme_id'}
+	'scheme_id=i'       => \$opts{'scheme_id'},
+	'user_id=i'         => \$opts{'user_id'}
 ) or die("Error in command line arguments\n");
 
 if ( $opts{'h'} ) {
@@ -75,6 +75,7 @@ if ( $opts{'d'} ) {
 	$script = initiate_script_object();
 }
 local $| = 1;
+$opts{'user_id'} //= -10;
 main();
 undef $script;
 
@@ -246,7 +247,7 @@ sub update_alleles {
 		$url .= "&limit=$opts{'limit'}" if $opts{'limit'};
 		my %already_received;
 	  PAGE: while (1) {
-	  		usleep(500_000);    #Rate-limiting
+			usleep(500_000);    #Rate-limiting
 			my $resp = $ua->get($url);
 			if ( !$resp->is_success ) {
 				say $url;
@@ -292,8 +293,8 @@ sub update_alleles {
 							'unchecked',
 							'now',
 							'now',
-							UPDATE_USER,
-							UPDATE_USER
+							$opts{'user_id'},
+							$opts{'user_id'}
 						);
 					};
 					if ($@) {
@@ -403,12 +404,12 @@ sub update_profiles {
 					$script->{'db'}->do(
 						'INSERT INTO profiles (scheme_id,profile_id,sender,curator,'
 						  . 'date_entered,datestamp) VALUES (?,?,?,?,?,?)',
-						undef, $opts{'scheme_id'}, $st, UPDATE_USER, UPDATE_USER, 'now', 'now'
+						undef, $opts{'scheme_id'}, $st, $opts{'user_id'}, $opts{'user_id'}, 'now', 'now'
 					);
 					$script->{'db'}->do(
 						'INSERT INTO profile_fields (scheme_id,profile_id,scheme_field,value,curator,'
 						  . 'datestamp) VALUES (?,?,?,?,?,?)',
-						undef, $opts{'scheme_id'}, $st, 'ST', $st, UPDATE_USER, 'now'
+						undef, $opts{'scheme_id'}, $st, 'ST', $st, $opts{'user_id'}, 'now'
 					);
 					foreach my $locus (@$loci) {
 						my $locus_name = $mapped_loci->{$locus} // $locus;
@@ -416,7 +417,8 @@ sub update_profiles {
 						$script->{'db'}->do(
 							'INSERT INTO profile_members (scheme_id,locus,profile_id,allele_id,'
 							  . 'curator,datestamp) VALUES (?,?,?,?,?,?)',
-							undef, $opts{'scheme_id'}, $locus_name, $st, $alleles{$locus}, UPDATE_USER, 'now'
+							undef, $opts{'scheme_id'}, $locus_name, $st, $alleles{$locus}, $opts{'user_id'},
+							'now'
 						);
 					}
 				};
@@ -427,7 +429,7 @@ sub update_profiles {
 				}
 			}
 		}
-		usleep(500_000);    #Rate-limiting
+		usleep(500_000);             #Rate-limiting
 		if ( @$profiles && $data->{'links'}->{'paging'}->{'next'} ) {
 			$url = $data->{'links'}->{'paging'}->{'next'};
 			$url .= q(&show_alleles=true);
@@ -570,6 +572,9 @@ ${bold}-s, --scheme$norm ${under}SCHEME NAME$norm
     
 ${bold}--scheme_id$norm ${under}SCHEME ID$norm
     Scheme id number in BIGSdb database.
+    
+${bold}--user_id$norm ${under}USER_ID$norm
+    User id number for sender/curator
 HELP
 	return;
 }
