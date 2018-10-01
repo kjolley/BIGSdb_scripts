@@ -363,12 +363,13 @@ sub format_hierarchy_json {
 		if ( $hierarchy->{$taxon}->{'rSTs'} ) {
 			push @values, qq("rSTs":$hierarchy->{$taxon}->{'rSTs'});
 		}
-#		my $term = qq($taxon);
+
+		#		my $term = qq($taxon);
 		local $" = q(,);
 		print qq({@values);
-#		print qq(<li data-rank="$hierarchy->{$taxon}->{'rank'}" data-taxon="$taxon">)
-#		  . qq(<span title="$hierarchy->{$taxon}->{'rank'}">$term</span>);
-		
+
+		#		print qq(<li data-rank="$hierarchy->{$taxon}->{'rank'}" data-taxon="$taxon">)
+		#		  . qq(<span title="$hierarchy->{$taxon}->{'rank'}">$term</span>);
 		my $closing_on_new_line = 0;
 		if ( $hierarchy->{$taxon}->{'children'} ) {
 			say q(,"children":[);
@@ -379,7 +380,6 @@ sub format_hierarchy_json {
 		}
 		print q( ) x $indent if $closing_on_new_line;
 		print q(});
-		
 	}
 	say q(];) if $top_level;
 	return;
@@ -489,6 +489,7 @@ sub make_tree {
 		);
 	}
 	close $fh;
+	$seqdef_db->{'db'}->commit;    #Prevent idle in transaction locks
 	if ( !-e $xmfa_file ) {
 		say 'failed.' if !$opts{'quiet'};
 		return;
