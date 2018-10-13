@@ -25,7 +25,8 @@ use constant {
 	CONFIG_DIR       => '/etc/bigsdb',
 	LIB_DIR          => '/usr/local/lib',
 	DBASE_CONFIG_DIR => '/etc/bigsdb/dbases',
-	IMAGE_DIR        => '.'
+	IMAGE_DIR        => '/home/httpd/pubmlst.org/neisseria/emert/images',
+	IMAGE_REL_DIR    => '/neisseria/emert/images'
 };
 #######End Local configuration#############################################
 use lib (LIB_DIR);
@@ -145,7 +146,8 @@ sub print_group_with_time {
 
 	#Cumulative totals
 	my $dates  = get_dates( undef, { yearly => 1 } );
-	my $days   = @$dates;
+	my $today  = BIGSdb::Utils::get_datestamp();
+	my $days   = int( Delta_Format( DateCalc( $dates->[0], $today ), 0, '%0dds' ) );
 	my $values = get_groups($dates);
 	process_dates( $days, $dates );
 	my $file_name = 'capsule_cumulative.png';
@@ -186,7 +188,7 @@ sub get_groups {
 			  . 'AND capsule_group IS NOT NULL GROUP BY '
 			  . 'capsule_group',
 			[ $date, $dates->[0] ],
-			{ fetch => 'all_arrayref', slice => {}, cache => 'get_cc' }
+			{ fetch => 'all_arrayref', slice => {}, cache => 'get_groups' }
 		);
 		my %groups = map { $_->{'capsule_group'} => $_->{'count'} } @$data;
 		push @$values, \%groups;
@@ -200,7 +202,8 @@ sub print_straintype_with_time {
 
 	#Cumulative totals
 	my $dates  = get_dates( undef, { yearly => 1 } );
-	my $days   = @$dates;
+	my $today  = BIGSdb::Utils::get_datestamp();
+	my $days   = int( Delta_Format( DateCalc( $dates->[0], $today ), 0, '%0dds' ) );
 	my $values = get_strains($dates);
 	process_dates( $days, $dates );
 	my $file_name = 'strain_cumulative.png';
@@ -266,7 +269,8 @@ sub print_cc_with_time {
 
 	#Cumulative totals
 	my $dates  = get_dates( undef, { yearly => 1 } );
-	my $days   = @$dates;
+	my $today  = BIGSdb::Utils::get_datestamp();
+	my $days   = int( Delta_Format( DateCalc( $dates->[0], $today ), 0, '%0dds' ) );
 	my $values = get_ccs($dates);
 	process_dates( $days, $dates );
 	my $file_name = 'cc_cumulative.png';
@@ -303,8 +307,8 @@ sub get_ccs {
 	foreach my $date (@$dates) {
 		my $data = $script->{'datastore'}->run_query(
 			"SELECT clonal_complex,count(*) AS count FROM $view v JOIN temp_isolates_scheme_fields_1 t ON "
-			  . 'v.id=t.id WHERE LEAST(date_received,date_entered) <= ? AND LEAST(date_received,date_entered) >=? AND clonal_complex IS NOT NULL GROUP BY '
-			  . 'clonal_complex',
+			  . 'v.id=t.id WHERE LEAST(date_received,date_entered) <= ? AND LEAST(date_received,date_entered) >=? '
+			  . 'AND clonal_complex IS NOT NULL GROUP BY clonal_complex',
 			[ $date, $dates->[0] ],
 			{ fetch => 'all_arrayref', slice => {}, cache => 'get_cc' }
 		);
@@ -315,7 +319,8 @@ sub get_ccs {
 }
 
 sub print_img_fieldset {
-	my ( $title, $caption, $path ) = @_;
+	my ( $title, $caption, $filename ) = @_;
+	my $path = IMAGE_REL_DIR . qq(/$filename);
 	say qq(<fieldset style="float:left"><legend>$title</legend>);
 	say qq(<a href="$path" data-rel="lightbox-1" class="lightbox" title="$caption">)
 	  . qq(<img src="$path" alt="$caption" style="width:200px;border:1px dashed black" />)
@@ -340,9 +345,9 @@ sub get_dates {
 	$mindate = ParseDate('2007-01-01') if Date_Cmp( '2007-01-01', $mindate ) > 0;
 	my $minyear = UnixDate( $mindate, '%Y' );
 	my $dates   = [];
-	my $days    = &Delta_Format( &DateCalc( $mindate, $today ), 0, '%0dds' );
+	my $days    = Delta_Format( DateCalc( $mindate, $today ), 0, '%0dds' );
 	for my $i ( 0 .. $days ) {
-		my $date = &UnixDate( &DateCalc( $mindate, "+ $i days" ), '%Y-%m-%d' );
+		my $date = UnixDate( DateCalc( $mindate, "+ $i days" ), '%Y-%m-%d' );
 		if ( $options->{'monthly'} ) {
 			if ( $date =~ /-01$/x ) {
 				push @$dates, $date;
@@ -394,13 +399,15 @@ sub process_dates {
 
 		#if mindate is more than two months from beginning of the next year, label it
 		my $too_near;
-		for my $i ( 0 .. 60 ) {
-			if ( $dates->[$i] ne q() ) {
-				$too_near = 1;
+		if ( @$dates > 60 ) {
+			for my $i ( 0 .. 60 ) {
+				if ( $dates->[$i] ne q() ) {
+					$too_near = 1;
+				}
 			}
-		}
-		if ( !$too_near ) {
-			$dates->[0] = &UnixDate( $mindate, '%Y-%m-%d' );
+			if ( !$too_near ) {
+				$dates->[0] = &UnixDate( $mindate, '%Y-%m-%d' );
+			}
 		}
 	}
 	return;
