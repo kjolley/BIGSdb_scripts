@@ -26,7 +26,7 @@ use constant {
 	LIB_DIR          => '/usr/local/lib',
 	DBASE_CONFIG_DIR => '/etc/bigsdb/dbases',
 	IMAGE_DIR        => '/home/httpd/pubmlst.org/neisseria/emert/images',
-	IMAGE_REL_DIR    => '/neisseria/emert/images'
+	IMAGE_REL_DIR    => '/cgi-bin/bigsdb/bigsdb.pl?db=pubmlst_neisseria_emert&amp;page=downloadFiles&amp;file='
 };
 #######End Local configuration#############################################
 use lib (LIB_DIR);
@@ -69,6 +69,7 @@ sub main {
 	say qq(<h2>Report generated: $datestamp</h2>);
 	say q(<div class="box resultstable">);
 	print_totals();
+	print_country_with_time();
 	print_group_with_time();
 	print_straintype_with_time();
 	print_cc_with_time();
@@ -139,6 +140,59 @@ sub print_totals {
 	say q(</tfoot></table>);
 	say q(</div>);
 	return;
+}
+
+sub print_country_with_time {
+	say q(<h2>Countries</h2>);
+	#Cumulative totals
+	my $dates  = get_dates( undef, { yearly => 1 } );
+	my $today  = BIGSdb::Utils::get_datestamp();
+	my $days   = int( Delta_Format( DateCalc( $dates->[0], $today ), 0, '%0dds' ) );
+	my $values = get_countries($dates);
+	process_dates( $days, $dates );
+	my $file_name = 'country_cumulative.png';
+	my $full_path = IMAGE_DIR . qq(/$file_name);
+	print_chart( $dates, $values, $full_path, 15 );
+	print_img_fieldset( 'Cumulative', 'Countries (cumulative totals)', $file_name );
+
+	#Past 2 years
+	$days   = 365 * 2;
+	$dates  = get_dates($days);
+	$values = get_countries($dates);
+	process_dates( $days, $dates );
+	$file_name = 'country_2y.png';
+	$full_path = IMAGE_DIR . qq(/$file_name);
+	print_chart( $dates, $values, $full_path, 15 );
+	print_img_fieldset( 'Past 2 years', 'Countries (past 2 years)', $file_name );
+
+	#Past year
+	$days   = 365;
+	$dates  = get_dates($days);
+	$values = get_countries($dates);
+	process_dates( $days, $dates );
+	$file_name = 'country_1y.png';
+	$full_path = IMAGE_DIR . qq(/$file_name);
+	print_chart( $dates, $values, $full_path, 15 );
+	print_img_fieldset( 'Past year', 'Countries (past year)', $file_name );
+	say q(<div style="clear:both"></div>);
+	return;
+}
+
+sub get_countries {
+	my ($dates) = @_;
+	my $values = [];
+	foreach my $date (@$dates) {
+		my $data = $script->{'datastore'}->run_query(
+			"SELECT country,count(*) AS count FROM $view "
+			  . 'WHERE LEAST(date_received,date_entered) <= ? AND LEAST(date_received,date_entered) >=? '
+			  . 'GROUP BY country',
+			[ $date, $dates->[0] ],
+			{ fetch => 'all_arrayref', slice => {}, cache => 'get_countries' }
+		);
+		my %countries = map { $_->{'country'} => $_->{'count'} } @$data;
+		push @$values, \%countries;
+	}
+	return $values;
 }
 
 sub print_group_with_time {
@@ -320,7 +374,7 @@ sub get_ccs {
 
 sub print_img_fieldset {
 	my ( $title, $caption, $filename ) = @_;
-	my $path = IMAGE_REL_DIR . qq(/$filename);
+	my $path = IMAGE_REL_DIR . $filename;
 	say qq(<fieldset style="float:left"><legend>$title</legend>);
 	say qq(<a href="$path" data-rel="lightbox-1" class="lightbox" title="$caption">)
 	  . qq(<img src="$path" alt="$caption" style="width:200px;border:1px dashed black" />)
