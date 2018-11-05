@@ -144,10 +144,12 @@ sub print_totals {
 
 sub print_country_with_time {
 	say q(<h2>Countries</h2>);
+
 	#Cumulative totals
-	my $dates  = get_dates( undef, { yearly => 1 } );
+	my $dates = get_dates( undef, { yearly => 1 } );
+	push @$dates, '2007-01-01' if !@$dates;
 	my $today  = BIGSdb::Utils::get_datestamp();
-	my $days   = int( Delta_Format( DateCalc( $dates->[0], $today ), 0, '%0dds' ) );
+	my $days   = int( Delta_Format( DateCalc( $dates->[0], $today ), 0, '%0dds' ) // 0 );
 	my $values = get_countries($dates);
 	process_dates( $days, $dates );
 	my $file_name = 'country_cumulative.png';
@@ -199,9 +201,10 @@ sub print_group_with_time {
 	say q(<h2>Capsule groups</h2>);
 
 	#Cumulative totals
-	my $dates  = get_dates( undef, { yearly => 1 } );
+	my $dates = get_dates( undef, { yearly => 1 } );
+	push @$dates, '2007-01-01' if !@$dates;
 	my $today  = BIGSdb::Utils::get_datestamp();
-	my $days   = int( Delta_Format( DateCalc( $dates->[0], $today ), 0, '%0dds' ) );
+	my $days   = int( Delta_Format( DateCalc( $dates->[0], $today ), 0, '%0dds' ) // 0 );
 	my $values = get_groups($dates);
 	process_dates( $days, $dates );
 	my $file_name = 'capsule_cumulative.png';
@@ -255,9 +258,10 @@ sub print_straintype_with_time {
 	say q(<p>Only records with no missing data for ST, capsule group, PorA and FetA are included.</p>);
 
 	#Cumulative totals
-	my $dates  = get_dates( undef, { yearly => 1 } );
+	my $dates = get_dates( undef, { yearly => 1 } );
+	push @$dates, '2007-01-01' if !@$dates;
 	my $today  = BIGSdb::Utils::get_datestamp();
-	my $days   = int( Delta_Format( DateCalc( $dates->[0], $today ), 0, '%0dds' ) );
+	my $days   = int( Delta_Format( DateCalc( $dates->[0], $today ), 0, '%0dds' ) // 0 );
 	my $values = get_strains($dates);
 	process_dates( $days, $dates );
 	my $file_name = 'strain_cumulative.png';
@@ -322,9 +326,10 @@ sub print_cc_with_time {
 	say q(<h2>Clonal complexes</h2>);
 
 	#Cumulative totals
-	my $dates  = get_dates( undef, { yearly => 1 } );
-	my $today  = BIGSdb::Utils::get_datestamp();
-	my $days   = int( Delta_Format( DateCalc( $dates->[0], $today ), 0, '%0dds' ) );
+	my $dates = get_dates( undef, { yearly => 1 } );
+	my $today = BIGSdb::Utils::get_datestamp();
+	push @$dates, '2007-01-01' if !@$dates;
+	my $days = int( Delta_Format( DateCalc( $dates->[0], $today ), 0, '%0dds' ) // 0 );
 	my $values = get_ccs($dates);
 	process_dates( $days, $dates );
 	my $file_name = 'cc_cumulative.png';
@@ -392,6 +397,7 @@ sub get_dates {
 		my $date1    = $mindate;
 		my $date2    = ParseDate($mindate2);
 		my $flag     = Date_Cmp( $date1, $date2 );
+		$flag //= 0;
 		if ( $flag > 0 ) {
 			$mindate = ParseDate($mindate2);
 		}
@@ -469,6 +475,7 @@ sub process_dates {
 
 sub print_chart {
 	my ( $dates, $values, $file_name, $top_hits ) = @_;
+	return if !@$values;
 	my $size     = 1.5;
 	my $bgcolour = 0xffffff;
 	my $c        = XYChart->new( 500 * $size, 500 * $size, $bgcolour, 0x0, 1 );
