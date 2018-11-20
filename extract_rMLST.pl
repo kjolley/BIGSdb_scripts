@@ -1,6 +1,6 @@
 #!/usr/bin/perl -T
 #Extract rMLST alleles for genomes with Genbank accessions
-#Written by Keith Jolley, 2012-2015.
+#Written by Keith Jolley, 2012-2018.
 use strict;
 use warnings;
 use 5.010;
@@ -18,7 +18,7 @@ use constant {
 #######End Local configuration###############################
 use lib (LIB_DIR);
 use Getopt::Std;
-use Error qw(:try);
+use Try::Tiny;
 use Bio::DB::GenBank;
 use Bio::SeqIO;
 use BIGSdb::Offline::Script;
@@ -32,7 +32,7 @@ if ( $opts{'h'} ) {
 }
 if ( !$opts{'d'} || !$opts{'f'} ) {
 	say "Usage: extract_rMLST.pl -d <database config> -f <data file>\n";
-	say "Help: extract_rMLST.pl -h";
+	say 'Help: extract_rMLST.pl -h';
 	exit;
 }
 my $script = BIGSdb::Offline::Script->new(
@@ -52,7 +52,8 @@ die "Database $opts{'d'} does not exist!\n" if !$script->{'db'};
 die "Must be a seqdef database!\n" if ( $script->{'system'}->{'dbtype'} // '' ) ne 'sequences';
 my $data = read_data_file( $opts{'f'} );
 my $loci =
-  $script->{'datastore'}->run_query( "SELECT id FROM loci WHERE id IN (SELECT locus FROM scheme_members WHERE scheme_id=?) ORDER BY id",
+  $script->{'datastore'}
+  ->run_query( "SELECT id FROM loci WHERE id IN (SELECT locus FROM scheme_members WHERE scheme_id=?) ORDER BY id",
 	1, { fetch => 'col_arrayref' } );
 if ( $opts{'s'} ) {
 	say @$loci . " loci";
@@ -78,12 +79,12 @@ foreach my $record (@$data) {
 			try {
 				$seq_obj = $seq_db->get_Seq_by_acc($accession);
 			}
-			catch Bio::Root::Exception with {
+			catch {
 				my $err = shift;
 				die "No data returned for accession number $accession. $err\n";
 			};
 			open( my $acc_fh, '>>', $seq_file ) || die "Cannot open $seq_file for appending";
-			say $acc_fh ">" . $seq_obj->id;
+			say $acc_fh '>' . $seq_obj->id;
 			say $acc_fh $seq_obj->seq;
 			close $acc_fh;
 			sleep 10;
@@ -148,7 +149,7 @@ sub parse_blast {
 			} else {
 				my $seq =
 				  $script->{'datastore'}
-				  ->run_query( "SELECT sequence FROM sequences WHERE locus=? AND allele_id=?", [$locus, $record[1]] );
+				  ->run_query( "SELECT sequence FROM sequences WHERE locus=? AND allele_id=?", [ $locus, $record[1] ] );
 				$lengths{ $record[1] } = length($seq);
 			}
 		}
@@ -168,7 +169,9 @@ sub parse_blast {
 			$match->{'start'}     = $record[6];
 			$match->{'end'}       = $record[7];
 
-			if ( ( $record[8] > $record[9] && $record[7] > $record[6] ) || ( $record[8] < $record[9] && $record[7] < $record[6] ) ) {
+			if (   ( $record[8] > $record[9] && $record[7] > $record[6] )
+				|| ( $record[8] < $record[9] && $record[7] < $record[6] ) )
+			{
 				$match->{'reverse'} = 1;
 			} else {
 				$match->{'reverse'} = 0;
@@ -222,9 +225,8 @@ sub create_locus_FASTA_db {
 	if ( !-e $temp_fastafile ) {
 		my $locus_info = $script->{'datastore'}->get_locus_info($locus);
 		my $file_buffer;
-		my $seqs_ref =
-		  $script->{'datastore'}
-		  ->run_query( "SELECT allele_id,sequence FROM sequences WHERE locus=?", $locus, { fetch => 'all_arrayref', slice => {} } );
+		my $seqs_ref = $script->{'datastore'}->run_query( "SELECT allele_id,sequence FROM sequences WHERE locus=?",
+			$locus, { fetch => 'all_arrayref', slice => {} } );
 		foreach (@$seqs_ref) {
 			next if !length $_->{'sequence'};
 			$file_buffer .= ">$_->{'allele_id'}\n$_->{'sequence'}\n";
@@ -233,7 +235,9 @@ sub create_locus_FASTA_db {
 		print $fasta_fh $file_buffer if $file_buffer;
 		close $fasta_fh;
 		my $dbtype = $locus_info->{'data_type'} eq 'DNA' ? 'nucl' : 'prot';
-		system("$script->{'config'}->{'blast+_path'}/makeblastdb -in $temp_fastafile -logfile /dev/null -parse_seqids -dbtype $dbtype");
+		system(
+"$script->{'config'}->{'blast+_path'}/makeblastdb -in $temp_fastafile -logfile /dev/null -parse_seqids -dbtype $dbtype"
+		);
 	}
 	return $temp_fastafile;
 }

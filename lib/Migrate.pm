@@ -1,11 +1,11 @@
 #Migration of data between BIGSdb databases
 #Written by Keith Jolley
-#Copyright (c) 2011-2017, University of Oxford
+#Copyright (c) 2011-2018, University of Oxford
 package BIGSdb_Scripts::Migrate;
 use strict;
 use warnings;
 use 5.010;
-use Error qw(:try);
+use Try::Tiny;
 use List::MoreUtils qw(uniq);
 use base qw(BIGSdb::Offline::Script);
 
@@ -14,7 +14,7 @@ sub run_script {
 	die "No connection to source database (check logs).\n" if !defined $self->{'db'};
 	$self->_initiate_db( $self->{'options'}->{'b'} );
 	if ( $self->{'options'}->{'c'} ) {
-		my @client_dbs = split /,/, $self->{'options'}->{'c'};
+		my @client_dbs = split /,/x, $self->{'options'}->{'c'};
 		foreach (@client_dbs) {
 			$self->_initiate_db($_);
 			die "Client database $_ should be an isolate database.\n"
@@ -57,8 +57,12 @@ sub _db_connect {
 	try {
 		$self->{'db2'}->{$name} = $self->{'dataConnector'}->get_connection( \%att );
 	}
-	catch BIGSdb::DatabaseConnectionException with {
-		$self->{'logger'}->error("Can not connect to database '$self->{'system2'}->{$name}->{'db'}'");
+	catch {
+		if ( $_->isa('BIGSdb::Exception::Database::Connection') ) {
+		$self->{'logger'}->error("Cannot connect to database '$self->{'system2'}->{$name}->{'db'}'");
+		else {
+			$logger->error($_);
+		}
 	};
 	return;
 }
