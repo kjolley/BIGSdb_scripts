@@ -24,6 +24,7 @@ use Getopt::Long qw(:config no_ignore_case);
 use REST::Client;
 use JSON;
 use Date::Manip;
+use Parallel::ForkManager;
 use constant BASE_URI => 'http://rest.pubmlst.org';
 
 #Term::Cap and POSIX are just used for formatting help page
@@ -31,9 +32,10 @@ use Term::Cap;
 use POSIX;
 my %opts;
 GetOptions(
-	'check=i' => \$opts{'check'},
-	'help'    => \$opts{'help'},
-	'show=i'  => \$opts{'show'}
+	'check=i'   => \$opts{'check'},
+	'help'      => \$opts{'help'},
+	'show=i'    => \$opts{'show'},
+	'threads=i' => \$opts{'threads'}
 ) or die("Error in command line arguments\n");
 if ( $opts{'help'} ) {
 	show_help();
@@ -41,13 +43,13 @@ if ( $opts{'help'} ) {
 }
 $opts{'check'} //= 5;
 $opts{'check'} = 1 if $opts{'check'} < 1;
-$opts{'show'}  //= $opts{'check'};
+$opts{'show'} //= $opts{'check'};
 my $client = REST::Client->new();
 main();
 
 sub main {
 	my $last_updates = get_updates();
-	my $dates = get_dates();
+	my $dates        = get_dates();
 	my $buffer;
 	my $shown = 0;
 	foreach my $date (@$dates) {
@@ -79,15 +81,16 @@ sub main {
 				my $url = qq(/bigsdb?db=$last_updates->{$species}->{'isolate_db'}&amp;page=query&amp;)
 				  . qq(prov_field1=datestamp&amp;prov_operator1==&amp;prov_value1=$date&amp;submit=1);
 				my $plural = $last_updates->{$species}->{'isolates'}->{$date} == 1 ? q() : q(s);
-				push @species_buffer, qq(<a href="$url">$last_updates->{$species}->{'isolates'}->{$date} isolate$plural</a>);
+				push @species_buffer,
+				  qq(<a href="$url">$last_updates->{$species}->{'isolates'}->{$date} isolate$plural</a>);
 			}
-			local $" =q(</li><li>);
-			push @date_buffer,qq($species:<ul><li>@species_buffer</li></ul>) if @species_buffer;
+			local $" = q(</li><li>);
+			push @date_buffer, qq($species:<ul><li>@species_buffer</li></ul>) if @species_buffer;
 		}
 		if (@date_buffer) {
 			$buffer .= qq(<p><b>$date</b>);
 			local $" = qq(</li><li>\n);
-			$buffer .= qq(<ul><li>@date_buffer</li></ul>);
+			$buffer .= qq(<ul><li>@date_buffer</li></ul>\n);
 			$shown++;
 			last if $shown == $opts{'show'};
 		}
@@ -105,42 +108,62 @@ sub get_dates {
 }
 
 sub get_updates {
-	my $updates;
+	my $all_updates = {};
 	$client->request( 'GET', BASE_URI );
 	my $resources = from_json( $client->responseContent );
-	foreach my $resource (@$resources) {
-		if ( $resource->{'databases'} ) {
-			foreach my $db ( @{ $resource->{'databases'} } ) {
-				$client->request( 'GET', $db->{'href'} );
-				if ( $db->{'description'} =~ /(.+)\ sequence\/profile\ definitions/x ) {
-					my $name   = $1;
-					my $seqdef = from_json( $client->responseContent );
-					if ( $seqdef->{'sequences'} ) {
-						my $sequences = get_sequence_updates( $seqdef->{'sequences'} );
-						$updates->{$name}->{'sequences'} = $sequences if keys %$sequences;
-					}
-					if ( $seqdef->{'schemes'} ) {
-						my $schemes = get_scheme_updates( $seqdef->{'schemes'} );
-						$updates->{$name}->{'schemes'} = $schemes if keys %$schemes;
-					}
-					if ( $updates->{$name} && $db->{'href'} =~ /db\/(.+)$/x ) {
-						$updates->{$name}->{'seqdef_db'} = $1;
-					}
-				} elsif ( $db->{'description'} =~ /(.+)\ isolates/x ) {
-					my $name       = $1;
-					my $isolate_db = from_json( $client->responseContent );
-					if ( $isolate_db->{'isolates'} ) {
-						my $isolates = get_isolate_updates( $isolate_db->{'isolates'} );
-						$updates->{$name}->{'isolates'} = $isolates if keys %$isolates;
-					}
-					if ( $updates->{$name} && $db->{'href'} =~ /db\/(.+)$/x ) {
-						$updates->{$name}->{'isolate_db'} = $1;
-					}
-				}
+	my $pm        = Parallel::ForkManager->new( $opts{'threads'} );
+	$pm->run_on_finish(
+		sub {
+			my ( $pid, $exit_code, $ident, $exit_signal, $core_dump, $data ) = @_;
+			my $name    = $data->{'name'};
+			my $updates = $data->{'updates'};
+			return if !$updates->{'isolates'} && !$updates->{'sequences'} && !$updates->{'schemes'};
+			foreach my $key ( keys %{$updates} ) {
+				$all_updates->{$name}->{$key} = $updates->{$key};
 			}
 		}
+	);
+	my @databases;
+	foreach my $resource (@$resources) {
+		next if !$resource->{'databases'};
+		foreach my $db ( @{ $resource->{'databases'} } ) {
+			push @databases, $db;
+		}
 	}
-	return $updates;
+	foreach my $db (@databases) {
+		$pm->start and next;
+		my $name;
+		my $updates = {};
+		$client->request( 'GET', $db->{'href'} );
+		if ( $db->{'description'} =~ /(.+)\ sequence\/profile\ definitions/x ) {
+			$name = $1;
+			my $seqdef = from_json( $client->responseContent );
+			if ( $seqdef->{'sequences'} ) {
+				my $sequences = get_sequence_updates( $seqdef->{'sequences'} );
+				$updates->{'sequences'} = $sequences if keys %$sequences;
+			}
+			if ( $seqdef->{'schemes'} ) {
+				my $schemes = get_scheme_updates( $seqdef->{'schemes'} );
+				$updates->{'schemes'} = $schemes if keys %$schemes;
+			}
+			if ( keys %$updates && $db->{'href'} =~ /db\/(.+)$/x ) {
+				$updates->{'seqdef_db'} = $1;
+			}
+		} elsif ( $db->{'description'} =~ /(.+)\ isolates/x ) {
+			$name = $1;
+			my $isolate_db = from_json( $client->responseContent );
+			if ( $isolate_db->{'isolates'} ) {
+				my $isolates = get_isolate_updates( $isolate_db->{'isolates'} );
+				$updates->{'isolates'} = $isolates if keys %$isolates;
+			}
+			if ( keys %$updates && $db->{'href'} =~ /db\/(.+)$/x ) {
+				$updates->{'isolate_db'} = $1;
+			}
+		}
+		$pm->finish( 0, { name => $name, updates => $updates } );
+	}
+	$pm->wait_all_children;
+	return $all_updates;
 }
 
 sub get_sequence_updates {
@@ -219,14 +242,19 @@ ${bold}SYNOPSIS$norm
 
 ${bold}OPTIONS$norm
 
-${bold}--check ${under}DAYS$norm
+${bold}--check$norm ${under}DAYS$norm
     Number of days to check (default 5).
 
 ${bold}--help$norm
     This help page.
 
-${bold}--show ${under}DAYS$norm
+${bold}--show$norm ${under}DAYS$norm
     Number of days to show (default = days to check). 
+    
+${bold}--threads$norm [${under}THREADS$norm]
+    Threads to use when querying API. Do not set too high or you may overload
+    the remote server (and get banned if you are running this as a third 
+    party).
 
 HELP
 	return;
