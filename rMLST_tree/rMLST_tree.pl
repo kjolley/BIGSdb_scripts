@@ -121,9 +121,11 @@ sub get_rsts {
 	my @species      = sort keys %$data;
 	my $temp_table   = $seqdef_db->{'datastore'}->create_temp_list_table_from_array( 'text', \@species );
 	my $scheme_cache = 'mv_scheme_' . RMLST_SCHEME_ID;
-	return $seqdef_db->{'datastore'}->run_query(
+	my $list = $seqdef_db->{'datastore'}->run_query(
 		"SELECT rST FROM $scheme_cache c JOIN $temp_table l ON c.species=l.value ORDER BY CAST(c.rST AS integer)",
 		undef, { fetch => 'col_arrayref' } );
+	$seqdef_db->do("DROP TABLE $temp_table");
+	return $list;
 }
 
 sub check_valid_rank {
