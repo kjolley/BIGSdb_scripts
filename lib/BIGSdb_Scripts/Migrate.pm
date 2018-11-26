@@ -59,9 +59,9 @@ sub _db_connect {
 	}
 	catch {
 		if ( $_->isa('BIGSdb::Exception::Database::Connection') ) {
-		$self->{'logger'}->error("Cannot connect to database '$self->{'system2'}->{$name}->{'db'}'");
-		else {
-			$logger->error($_);
+			$self->{'logger'}->error("Cannot connect to database '$self->{'system2'}->{$name}->{'db'}'");
+		} else {
+			$self->{'logger'}->error($_);
 		}
 	};
 	return;
