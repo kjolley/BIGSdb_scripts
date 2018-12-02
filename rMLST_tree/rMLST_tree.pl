@@ -121,7 +121,8 @@ sub get_rsts {
 	my @species      = sort keys %$data;
 	my $temp_table   = $seqdef_db->{'datastore'}->create_temp_list_table_from_array( 'text', \@species );
 	my $scheme_cache = 'mv_scheme_' . RMLST_SCHEME_ID;
-	my $list = $seqdef_db->{'datastore'}->run_query(
+	my $list =
+	  $seqdef_db->{'datastore'}->run_query(
 		"SELECT rST FROM $scheme_cache c JOIN $temp_table l ON c.species=l.value ORDER BY CAST(c.rST AS integer)",
 		undef, { fetch => 'col_arrayref' } );
 	$seqdef_db->{'db'}->do("DROP TABLE $temp_table");
@@ -148,6 +149,7 @@ sub get_taxonomy {
 		$qry .= q( AND field_value IN (SELECT species FROM public));
 	}
 	my $data = $isolate_db->{'datastore'}->run_query( $qry, undef, { fetch => 'all_arrayref', slice => {} } );
+	$isolate_db->{'db'}->commit;    #Prevent idle in transaction locks
 	my $taxonomy = {};
 	map { $taxonomy->{ $_->{'field_value'} }->{ $_->{'attribute'} } = $_->{'value'} } @$data;
 	$rank //= 'species' if $taxon;
@@ -160,7 +162,6 @@ sub get_taxonomy {
 		}
 		return $filtered;
 	}
-	$isolate_db->{'db'}->commit;    #Prevent idle in transaction locks
 	return $taxonomy;
 }
 
@@ -182,11 +183,12 @@ sub get_rst_counts {
 	$taxonomy //= get_taxonomy();
 	my $rst_counts = {};
 	if ( $opts{'rst_count'} ) {
-		my $table = 'mv_scheme_' . RMLST_SCHEME_ID;
-		my $rst_data =
-		  $seqdef_db->{'datastore'}
-		  ->run_query( "SELECT species,count(*) AS count FROM $table WHERE species IS NOT NULL GROUP BY species",
-			undef, { fetch => 'all_arrayref', slice => {} } );
+		my $table    = 'mv_scheme_' . RMLST_SCHEME_ID;
+		my $rst_data = $seqdef_db->{'datastore'}->run_query(
+			"SELECT species,count(*) AS count FROM $table WHERE species IS NOT NULL GROUP BY species",
+			undef, { fetch => 'all_arrayref', slice => {} }
+		);
+		$seqdef_db->{'db'}->commit;
 		foreach my $values (@$rst_data) {
 			foreach my $rank ( RANKS, 'species' ) {
 				next if !$taxonomy->{ $values->{'species'} }->{$rank};
@@ -208,6 +210,7 @@ sub get_isolate_counts {
 			undef,
 			{ fetch => 'all_arrayref', slice => {} }
 		);
+		$isolate_db->{'db'}->commit;
 		foreach my $values (@$rst_data) {
 			foreach my $rank ( RANKS, 'species' ) {
 				next if !$taxonomy->{ $values->{'species'} }->{$rank};
