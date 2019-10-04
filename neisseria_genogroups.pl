@@ -31,7 +31,6 @@ use constant {
 	TMP_DIR          => '/var/tmp',
 	DBASE            => 'pubmlst_neisseria_isolates_all',
 	SCRIPT_DIR       => '/usr/local/characterize_neisseria_capsule',
-	REST_URL         => 'http://rest.pubmlst.org',
 	USER_ID          => -3
 };
 #######End Local configuration#############################################
@@ -107,7 +106,10 @@ sub process_output {
 		next if $line =~ /^Query/x;
 		my ( $id, $genogroup, undef, $notes ) = split /\t/x, $line;
 		next if !$id;
-		$genogroup = 'cnl' if $genogroup eq 'cnl_1';
+		$notes =~ s/\r?\n//gx;
+		if ( $notes eq 'capsule null locus (cnl)' ) {
+			$genogroup = 'cnl';
+		}
 		if ( !$allowed_genogroups{$genogroup} ) {
 			say qq(id: $id; Invalid genogroup: $genogroup);
 			next;
@@ -119,7 +121,8 @@ sub process_output {
 				$notes .= '. ';
 			}
 			$notes .= 'Prediction code: https://github.com/ntopaz/characterize_neisseria_capsule.';
-			$script->{'db'}->do( 'UPDATE isolates SET (genogroup,genogroup_notes)=(?,?)', undef, $genogroup, $notes );
+			$script->{'db'}->do( 'UPDATE isolates SET (genogroup,genogroup_notes)=(?,?) WHERE id=?',
+				undef, $genogroup, $notes, $id );
 			$script->{'db'}->do( 'INSERT INTO history (isolate_id,timestamp,action,curator) VALUES (?,?,?,?)',
 				undef, $id, 'now', "genogroup: '' -> '$genogroup'", USER_ID );
 		};
