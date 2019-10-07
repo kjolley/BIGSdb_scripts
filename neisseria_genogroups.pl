@@ -110,6 +110,14 @@ sub process_output {
 		if ( $notes eq 'capsule null locus (cnl)' ) {
 			$genogroup = 'cnl';
 		}
+		if ( $notes =~ /^(\w)\ backbone/x ) {
+			my $potential_genogroup = $1;
+			if (   ( $notes =~ /fragmented/x || $notes =~ /phase\ variable\ OFF/x || $notes =~ /internal\ stop/x )
+				&& ( $notes !~ /Insertion_Element/xi && $notes !~ /missing/x ) )
+			{
+				$genogroup = $potential_genogroup;
+			}
+		}
 		if ( !$allowed_genogroups{$genogroup} ) {
 			say qq(id: $id; Invalid genogroup: $genogroup);
 			next;
