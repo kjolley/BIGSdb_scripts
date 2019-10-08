@@ -213,6 +213,9 @@ ${bold}--help$norm
 ${bold}--isolates$norm ${under}LIST$norm  
     Comma-separated list of isolate ids to scan.
     
+${bold}--quiet$norm
+    Suppress output from underlying script.
+    
 ${bold}--size$norm ${under}SIZE$norm
     Limit isolates to a sequence bin size >= value set (default 2,000,000 bp).
     
