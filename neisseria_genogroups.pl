@@ -19,7 +19,7 @@
 #You should have received a copy of the GNU General Public License
 #along with this software.  If not, see <http://www.gnu.org/licenses/>.
 #
-#Version: 20191004
+#Version: 20191008
 use strict;
 use warnings;
 use 5.010;
