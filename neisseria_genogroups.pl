@@ -107,14 +107,15 @@ sub process_output {
 		my ( $id, $genogroup, undef, $notes ) = split /\t/x, $line;
 		next if !$id;
 		$notes =~ s/\r?\n//gx;
-		if ( $notes eq 'capsule null locus (cnl)' ) {
+		if ( $notes =~ /^capsule\ null\ locus\ \(cnl\)/x ) {
 			$genogroup = 'cnl';
 		}
 		if ( $notes =~ /^(\w)\ backbone/x ) {
 			my $potential_genogroup = $1;
-			if (   ( $notes =~ /fragmented/x || $notes =~ /phase\ variable\ OFF/x || $notes =~ /internal\ stop/x )
-				&& ( $notes !~ /Insertion_Element/xi && $notes !~ /missing/x ) )
-			{
+			if ( ( $potential_genogroup eq 'W' || $potential_genogroup eq 'Y' ) && $notes =~ /fragmented/x ) {
+				next;    #Leave this blank.
+			}
+			if ( $notes !~ /Insertion_Element/xi ) {
 				$genogroup = $potential_genogroup;
 			}
 		}
