@@ -140,8 +140,8 @@ sub process_output {
 				$notes .= '. ';
 			}
 			$notes .= 'Prediction code: https://github.com/ntopaz/characterize_neisseria_capsule.';
-			$script->{'db'}->do( 'UPDATE isolates SET (genogroup,genogroup_notes)=(?,?) WHERE id=?',
-				undef, $genogroup, $notes, $id );
+			$script->{'db'}->do( 'UPDATE isolates SET (genogroup,genogroup_notes,datestamp,curator)=(?,?,?,?) WHERE id=?',
+				undef, $genogroup, $notes, 'now', USER_ID, $id );
 			$script->{'db'}->do( 'INSERT INTO history (isolate_id,timestamp,action,curator) VALUES (?,?,?,?)',
 				undef, $id, 'now', "genogroup: '' -> '$genogroup'", USER_ID );
 		};
@@ -168,10 +168,12 @@ sub add_failure_comment {
 }
 
 sub get_ids_with_no_genogroup {
-	my $no_genogroup =
-	  $script->{'datastore'}->run_query(
-		"SELECT id FROM $script->{'system'}->{'view'} WHERE species='Neisseria meningitidis' AND genogroup IS NULL",
-		undef, { fetch => 'col_arrayref' } );
+	my $no_genogroup = $script->{'datastore'}->run_query(
+		"SELECT id FROM $script->{'system'}->{'view'} WHERE species='Neisseria meningitidis' "
+		  . 'AND genogroup IS NULL AND genogroup_notes IS NULL',
+		undef,
+		{ fetch => 'col_arrayref' }
+	);
 	my %no_genogroup = map { $_ => 1 } @$no_genogroup;
 	my $isolates = $script->get_isolates_with_linked_seqs( { size => $opts{'size'} // 2_000_000 } );
 	my $filtered_list = [];
