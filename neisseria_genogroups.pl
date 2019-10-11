@@ -19,7 +19,7 @@
 #You should have received a copy of the GNU General Public License
 #along with this software.  If not, see <http://www.gnu.org/licenses/>.
 #
-#Version: 20191008
+#Version: 20191011
 use strict;
 use warnings;
 use 5.010;
@@ -28,7 +28,7 @@ use constant {
 	CONFIG_DIR       => '/etc/bigsdb',
 	LIB_DIR          => '/usr/local/lib',
 	DBASE_CONFIG_DIR => '/etc/bigsdb/dbases',
-	TMP_DIR          => '/var/tmp',
+	TMP_DIR          => '/run/shm',
 	DBASE            => 'pubmlst_neisseria_isolates_all',
 	SCRIPT_DIR       => '/usr/local/characterize_neisseria_capsule',
 	USER_ID          => -3
@@ -50,6 +50,7 @@ GetOptions(
 	'database=s'   => \$opts{'d'},
 	'help'         => \$opts{'h'},
 	'i|isolates=s' => \$opts{'i'},
+	'l|limit=i'    => \$opts{'limit'},
 	'q|quiet'      => \$opts{'q'},
 	'size=i'       => \$opts{'size'},
 	'threads=i'    => \$opts{'threads'},
@@ -82,6 +83,10 @@ sub main {
 	my $isolates = get_ids_with_no_genogroup();
 	$isolates = $script->filter_and_sort_isolates($isolates);
 	return if !@$isolates;
+	if ( defined $opts{'limit'} && $opts{'limit'} > 0 ) {
+		my $upper_bound = $opts{'limit'} > @$isolates ? @$isolates - 1 : $opts{'limit'} - 1;
+		@$isolates = @{$isolates}[ 0 .. $upper_bound ];
+	}
 	my $dir        = create_blast_database();
 	my $fasta_dir  = get_isolate_fasta_files($isolates);
 	my $out_dir    = TMP_DIR . '/' . BIGSdb::Utils::get_random();
@@ -113,11 +118,16 @@ sub process_output {
 		if ( $notes =~ /^(\w)\ backbone/x ) {
 			my $potential_genogroup = $1;
 			if ( ( $potential_genogroup eq 'W' || $potential_genogroup eq 'Y' ) && $notes =~ /fragmented/x ) {
-				next;    #Leave this blank.
+				add_failure_comment($id);
+				next;
 			}
 			if ( $notes !~ /Insertion_Element/xi ) {
 				$genogroup = $potential_genogroup;
 			}
+		}
+		if ( $genogroup eq 'Contaminated' ) {
+			add_failure_comment($id);
+			next;
 		}
 		if ( !$allowed_genogroups{$genogroup} ) {
 			say qq(id: $id; Invalid genogroup: $genogroup);
@@ -142,6 +152,19 @@ sub process_output {
 		$script->{'db'}->commit;
 	}
 	close $fh;
+}
+
+sub add_failure_comment {
+	my ($id) = @_;
+	my $notes = 'Script failed to predict genogroup with high confidence. '
+	  . 'Prediction code: https://github.com/ntopaz/characterize_neisseria_capsule.';
+	eval { $script->{'db'}->do( 'UPDATE isolates SET genogroup_notes=? WHERE id=?', undef, $notes, $id ); };
+	if ($@) {
+		$script->{'db'}->rollback;
+		die "$@\n";
+	}
+	$script->{'db'}->commit;
+	return;
 }
 
 sub get_ids_with_no_genogroup {
@@ -213,6 +236,11 @@ ${bold}--help$norm
     
 ${bold}--isolates$norm ${under}LIST$norm  
     Comma-separated list of isolate ids to scan.
+    
+${bold}--limit$norm ${under}LIMIT$norm
+    Stop after processing the number of isolates. If you attempt to process
+    many thousands of records together, it can sometimes run out of memory so
+    it is useful to be able to limit this.
     
 ${bold}--quiet$norm
     Suppress output from underlying script.
