@@ -1,7 +1,8 @@
 #!/usr/bin/perl -T
 #Populate NadA_peptide with confirmed '0' if currently undefined and
-#nadA allele (NEIS1969) is defined with flag 'internal stop codon'.
-#Written by Keith Jolley 2016
+#nadA allele (NEIS1969) is defined with flag 'internal stop codon' or 
+#'contains IS element'.
+#Written by Keith Jolley 2016-2019
 use strict;
 use warnings;
 use 5.010;
@@ -67,7 +68,7 @@ ISOLATES: foreach my $id (@$isolates) {
 		next ISOLATES if $allele->{'allele_id'} eq '0';
 		my $flags = $allele_locus->get_flags( $allele->{'allele_id'} );
 		my %flags = map { $_ => 1 } @$flags;
-		if ( $flags{'internal stop codon'} || $flags{'frameshift'} ) {
+		if ( $flags{'internal stop codon'} || $flags{'frameshift'} || $flags{'contains IS element'} ) {
 			say "Marking id: $id NadA_peptide as missing.";
 			eval {
 				$script->{'db'}->do(
@@ -78,7 +79,7 @@ ISOLATES: foreach my $id (@$isolates) {
 			};
 			$script->{'db'}->do( 'INSERT INTO history (isolate_id,timestamp,action,curator) VALUES (?,?,?,?)',
 				undef, $id, 'now',
-				PEPTIDE_LOCUS . q(: new designation '0' (allele with frameshift or internal stop codon)), AUTOTAGGER );
+				PEPTIDE_LOCUS . q(: new designation '0' (allele with frameshift, internal stop codon or IS element)), AUTOTAGGER );
 			if ($@) {
 				$script->{'db'}->rollback;
 				say $@;
