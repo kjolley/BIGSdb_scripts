@@ -57,6 +57,7 @@ GetOptions(
 	'n|new_loci'        => \$opts{'n'},
 	'm|allow_missing'   => \$opts{'allow_missing'},
 	'no_errors'         => \$opts{'no_errors'},
+	'reldate=i'         => \$opts{'reldate'},
 	's|scheme=s'        => \$opts{'s'},
 	'scheme_id=i'       => \$opts{'scheme_id'},
 	'user_id=i'         => \$opts{'user_id'}
@@ -66,7 +67,8 @@ if ( $opts{'h'} ) {
 	show_help();
 	exit;
 }
-my $ua           = LWP::UserAgent->new;
+my $ua = LWP::UserAgent->new;
+$ua->timeout(600);
 my $token        = get_api_token();
 my $base64string = encode_base64("$token:");
 $ua->default_header( Authorization => "Basic $base64string" );
@@ -130,7 +132,8 @@ sub check_alleles {
 		my ( $allele_count, $complete_cds, $min_length, $max_length ) = ( 0, 0, $infinity, 0 );
 		next LOCUS if $opts{'locus_regex'} && $locus !~ /$opts{'locus_regex'}/x;
 		my $url = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/alleles?locus=$locus";
-		$url .= "&limit=$opts{'limit'}" if $opts{'limit'};
+		$url .= "&limit=$opts{'limit'}"     if $opts{'limit'};
+		$url .= "&reldate=$opts{'reldate'}" if $opts{'reldate'};
 		my %already_received;
 	  PAGE: while (1) {
 			my $resp = $ua->get($url);
@@ -171,7 +174,6 @@ sub check_alleles {
 	return;
 }
 
-#BIGSdb doesn't allows locus names to begin with an underscore or a digit.
 sub get_mapped_loci {
 	if ( $opts{'e'} eq 'yersinia' ) {
 		return {
@@ -195,38 +197,7 @@ sub get_mapped_loci {
 			trpE    => 'Moraxella_catarrhalis_MLST_trpE'
 		};
 	}
-	return {
-#		'93282_00335'  => '_93282_00335',
-#		'93282_01680'  => '_93282_01680',
-#		'93282_01824'  => '_93282_01824',
-#		'93282_01825'  => '_93282_01825',
-#		'93282_02692'  => '_93282_02692',
-#		'93282_02869'  => '_93282_02869',
-#		'93282_02880'  => '_93282_02880',
-#		'93282_02906'  => '_93282_02906',
-#		'93282_02907'  => '_93282_02907',
-#		'93282_03486'  => '_93282_03486',
-#		'93282_03487'  => '_93282_03487',
-#		'93282_03488'  => '_93282_03488',
-#		'EP-D108_gp14' => 'EP_D108_gp14',
-#		'EP-D108_gp15' => 'EP_D108_gp15',
-#		'EP-D108_gp19' => 'EP_D108_gp19',
-#		'EP-D108_gp31' => 'EP_D108_gp31',
-#		'EP-D108_gp38' => 'EP_D108_gp38',
-#		'EP-D108_gp41' => 'EP_D108_gp41',
-#		'EP-D108_gp42' => 'EP_D108_gp42',
-#		'EP-D108_gp57' => 'EP_D108_gp57',
-#		'O96-HN_00746' => 'O96_HN_00746',
-#		'O96-HN_00747' => 'O96_HN_00747',
-#		'O96-HN_00748' => 'O96_HN_00748',
-#		'O96-HN_01860' => 'O96_HN_01860',
-#		'O96-HN_01861' => 'O96_HN_01861',
-#		'O96-HN_02062' => 'O96_HN_02062',
-#		'O96-HN_02063' => 'O96_HN_02063',
-#		'O96-HN_02064' => 'O96_HN_02064',
-#		'O96-HN_03653' => 'O96_HN_03653',
-#		'O96-HN_03657' => 'O96_HN_03657',
-	};
+	return {};
 }
 
 sub update_alleles {
@@ -244,16 +215,30 @@ sub update_alleles {
 		my %existing = map { $_->[0] => $_->[1] } @$existing_alleles;
 		my %existing_seqs = map { Digest::MD5::md5_hex( $_->[1] ) => $_->[0] } @$existing_alleles;
 		my $url = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/alleles?locus=$locus";
-		$url .= "&limit=$opts{'limit'}" if $opts{'limit'};
+		$url .= "&limit=$opts{'limit'}"     if $opts{'limit'};
+		$url .= "&reldate=$opts{'reldate'}" if $opts{'reldate'};
 		my %already_received;
+		local $| = 1;
 	  PAGE: while (1) {
 			usleep(500_000);    #Rate-limiting
-			my $resp = $ua->get($url);
-			if ( !$resp->is_success ) {
-				say $url;
-				say $resp->status_line;
-				say $resp->decoded_content;
-				last PAGE;
+			my $resp;
+		  ATTEMPT: for my $attempt ( 1 .. 10 ) {
+				$resp = $ua->get($url);
+				if ( !$resp->is_success ) {
+					if ( $attempt < 10 ) {
+						say $url;
+						say $resp->status_line;
+						say $resp->decoded_content;
+						my $delay = $attempt * 10;
+						say "Retrying in $delay seconds...";
+						sleep $delay;
+						next ATTEMPT;
+					}
+					say "Giving up on locus $locus.";
+					last PAGE;
+				} else {
+					last ATTEMPT;
+				}
 			}
 			my $data    = decode_json( $resp->decoded_content );
 			my $alleles = $data->{'alleles'};
@@ -344,20 +329,34 @@ sub update_profiles {
 		}
 	}
 	my $url = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/sts?show_alleles=true";
-	$url .= "&limit=$opts{'limit'}" if $opts{'limit'};
+	$url .= "&limit=$opts{'limit'}"     if $opts{'limit'};
+	$url .= "&reldate=$opts{'reldate'}" if $opts{'reldate'};
 	my %already_received;
   PAGE: while (1) {
-		my $resp = $ua->get($url);
-		if ( !$resp->is_success ) {
-			say $url;
-			say $resp->status_line;
-			say $resp->decoded_content;
-			last PAGE;
+		my $resp;
+	  ATTEMPT: for my $attempt ( 1 .. 10 ) {
+			$resp = $ua->get($url);
+			if ( !$resp->is_success ) {
+				if ( $attempt < 10 ) {
+					say $url;
+					say $resp->status_line;
+					say $resp->decoded_content;
+					my $delay = $attempt * 10;
+					say "Retrying in $delay seconds...";
+					sleep $delay;
+					next ATTEMPT;
+				}
+				say "Giving up.";
+				last PAGE;
+			} else {
+				last ATTEMPT;
+			}
 		}
 		my $data     = decode_json( $resp->decoded_content );
 		my $profiles = $data->{'STs'};
 	  PROFILE: foreach my $profile (@$profiles) {
 			my $st = $profile->{'ST_id'};
+			my $cc = $profile->{'info'}->{'st_complex'};
 			if ( $already_received{$st} ) {
 				say "ST-$st has already been received in this download!";
 				next;
@@ -411,14 +410,20 @@ sub update_profiles {
 						  . 'datestamp) VALUES (?,?,?,?,?,?)',
 						undef, $opts{'scheme_id'}, $st, 'ST', $st, $opts{'user_id'}, 'now'
 					);
+					if ( defined $cc ) {
+						$script->{'db'}->do(
+							'INSERT INTO profile_fields (scheme_id,profile_id,scheme_field,value,curator,'
+							  . 'datestamp) VALUES (?,?,?,?,?,?)',
+							undef, $opts{'scheme_id'}, $st, 'clonal_complex', $cc, $opts{'user_id'}, 'now'
+						);
+					}
 					foreach my $locus (@$loci) {
 						my $locus_name = $mapped_loci->{$locus} // $locus;
 						$alleles{$locus} = 'N' if $alleles{$locus} eq '0';
 						$script->{'db'}->do(
 							'INSERT INTO profile_members (scheme_id,locus,profile_id,allele_id,'
 							  . 'curator,datestamp) VALUES (?,?,?,?,?,?)',
-							undef, $opts{'scheme_id'}, $locus_name, $st, $alleles{$locus}, $opts{'user_id'},
-							'now'
+							undef, $opts{'scheme_id'}, $locus_name, $st, $alleles{$locus}, $opts{'user_id'}, 'now'
 						);
 					}
 				};
@@ -429,7 +434,7 @@ sub update_profiles {
 				}
 			}
 		}
-		usleep(500_000);             #Rate-limiting
+		usleep(500_000);    #Rate-limiting
 		if ( @$profiles && $data->{'links'}->{'paging'}->{'next'} ) {
 			$url = $data->{'links'}->{'paging'}->{'next'};
 			$url .= q(&show_alleles=true);
@@ -476,21 +481,28 @@ sub check_options {
 sub get_loci {
 	die "No scheme selected.\n" if !$opts{'s'};
 	check_options(qw(e s));
-	my $url  = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/loci?limit=50000";
-	my $resp = $ua->get($url);
-	if ( $resp->is_success ) {
-		my $data        = decode_json( $resp->decoded_content );
-		my $loci        = $data->{'loci'};
-		my $locus_names = [];
-		foreach my $locus (@$loci) {
-			push @$locus_names, $locus->{'locus'};
+	my $url         = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/loci?limit=2000";
+	my $locus_names = [];
+	while (1) {
+		my $resp = $ua->get($url);
+		if ( $resp->is_success ) {
+			my $data = decode_json( $resp->decoded_content );
+			my $loci = $data->{'loci'};
+			foreach my $locus (@$loci) {
+				push @$locus_names, $locus->{'locus'};
+			}
+			if ( @$loci && $data->{'links'}->{'paging'}->{'next'} ) {
+				$url = $data->{'links'}->{'paging'}->{'next'};
+				usleep(500_000);
+			} else {
+				return $locus_names;
+			}
+		} else {
+			say $url;
+			say $resp->status_line;
+			say $resp->decoded_content;
+			exit;
 		}
-		return $locus_names;
-	} else {
-		say $url;
-		say $resp->status_line;
-		say $resp->decoded_content;
-		exit;
 	}
 	return [];
 }
@@ -566,6 +578,9 @@ ${bold}-p, --update_profiles$norm
     
 ${bold}-r, --route$norm
     Relative route.
+    
+${bold}--reldate$norm ${under}DAYS$norm
+    Only return data from added in the last set number of days.
     
 ${bold}-s, --scheme$norm ${under}SCHEME NAME$norm
     Scheme name.
