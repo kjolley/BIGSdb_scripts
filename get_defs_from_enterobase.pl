@@ -29,6 +29,7 @@ use JSON;
 use Digest::MD5;
 use Data::Dumper qw(Dumper);
 use Time::HiRes qw(usleep);
+use List::MoreUtils qw(uniq);
 ###########Local configuration################################
 use constant {
 	CONFIG_DIR       => '/etc/bigsdb',
@@ -43,24 +44,27 @@ use BIGSdb::Offline::Script;
 use BIGSdb::Utils;
 my %opts;
 GetOptions(
-	'a|update_alleles'  => \$opts{'a'},
-	'check_alleles'     => \$opts{'check_alleles'},
-	'commit'            => \$opts{'commit'},
-	'd|database=s'      => \$opts{'d'},
-	'e|enterobase_db=s' => \$opts{'e'},
-	'l|loci'            => \$opts{'l'},
-	'limit=i'           => \$opts{'limit'},
-	'locus_regex=s'     => \$opts{'locus_regex'},
-	'h|help'            => \$opts{'h'},
-	'p|update_profiles' => \$opts{'p'},
-	'r|route=s'         => \$opts{'r'},
-	'n|new_loci'        => \$opts{'n'},
-	'm|allow_missing'   => \$opts{'allow_missing'},
-	'no_errors'         => \$opts{'no_errors'},
-	'reldate=i'         => \$opts{'reldate'},
-	's|scheme=s'        => \$opts{'s'},
-	'scheme_id=i'       => \$opts{'scheme_id'},
-	'user_id=i'         => \$opts{'user_id'}
+	'a|update_alleles'      => \$opts{'a'},
+	'check_alleles'         => \$opts{'check_alleles'},
+	'commit'                => \$opts{'commit'},
+	'd|database=s'          => \$opts{'d'},
+	'debug'                 => \$opts{'debug'},
+	'e|enterobase_db=s'     => \$opts{'e'},
+	'l|loci'                => \$opts{'l'},
+	'last_updated_before=s' => \$opts{'last_updated_before'},
+	'limit=i'               => \$opts{'limit'},
+	'locus_regex=s'         => \$opts{'locus_regex'},
+	'h|help'                => \$opts{'h'},
+	'missing'               => \$opts{'missing'},
+	'p|update_profiles'     => \$opts{'p'},
+	'r|route=s'             => \$opts{'r'},
+	'n|new_loci'            => \$opts{'n'},
+	'm|allow_missing'       => \$opts{'allow_missing'},
+	'no_errors'             => \$opts{'no_errors'},
+	'reldate=i'             => \$opts{'reldate'},
+	's|scheme=s'            => \$opts{'s'},
+	'scheme_id=i'           => \$opts{'scheme_id'},
+	'user_id=i'             => \$opts{'user_id'}
 ) or die("Error in command line arguments\n");
 
 if ( $opts{'h'} ) {
@@ -89,6 +93,11 @@ sub main {
 		},
 		l => sub {
 			my $loci = get_loci();
+			local $" = qq(\n);
+			say qq(@$loci);
+		},
+		missing => sub {
+			my $loci = get_missing_loci();
 			local $" = qq(\n);
 			say qq(@$loci);
 		},
@@ -202,12 +211,31 @@ sub get_mapped_loci {
 
 sub update_alleles {
 	check_options(qw(d e s));
-	my $loci        = get_loci();
-	my $mapped_loci = get_mapped_loci();
+	my $loci         = get_loci();
+	my $defined_loci = $script->{'datastore'}->run_query( 'SELECT id FROM loci', undef, { fetch => 'col_arrayref' } );
+	my %defined      = map { $_ => 1 } @$defined_loci;
+	my $mapped_loci  = get_mapped_loci();
+	my %recently_updated;
+	if ( BIGSdb::Utils::is_date( $opts{'last_updated_before'} ) ) {
+		my $recently_updated = $script->{'datastore'}->run_query(
+			'SELECT locus FROM locus_stats WHERE datestamp>=?',
+			$opts{'last_updated_before'},
+			{ fetch => 'col_arrayref' }
+		);
+		%recently_updated = map { $_ => 1 } @$recently_updated;
+	}
 	usleep(500_000);    #Rate-limiting
-  LOCUS: foreach my $locus (@$loci) {
-		next LOCUS if $opts{'locus_regex'} && $locus !~ /$opts{'locus_regex'}/x;
+	my $complete = 0;
+  LOCUS: foreach my $locus ( sort @$loci ) {
 		my $locus_name = $mapped_loci->{$locus} // $locus;
+		$complete++;
+		my $percent = BIGSdb::Utils::decimal_place( ( $complete / @$loci ) * 100, 1 );
+		next LOCUS if $opts{'locus_regex'} && $locus !~ /$opts{'locus_regex'}/x;
+		next LOCUS if $opts{'last_updated_before'} && $recently_updated{$locus_name};
+		if ( !$defined{$locus_name} ) {
+			say "Locus $locus_name has not been defined.";
+			next LOCUS;
+		}
 		my $existing_alleles =
 		  $script->{'datastore'}->run_query( 'SELECT allele_id,sequence FROM sequences WHERE locus=?',
 			$locus_name, { fetch => 'all_arrayref', cache => 'get_all_alleles' } );
@@ -223,6 +251,7 @@ sub update_alleles {
 			usleep(500_000);    #Rate-limiting
 			my $resp;
 		  ATTEMPT: for my $attempt ( 1 .. 10 ) {
+				say $url if $opts{'debug'};
 				$resp = $ua->get($url);
 				if ( !$resp->is_success ) {
 					if ( $attempt < 10 ) {
@@ -299,6 +328,7 @@ sub update_alleles {
 			}
 		}
 		$script->{'db'}->commit;
+		say "${percent}% complete." if $opts{'debug'};
 	}
 	return;
 }
@@ -481,15 +511,22 @@ sub check_options {
 sub get_loci {
 	die "No scheme selected.\n" if !$opts{'s'};
 	check_options(qw(e s));
-	my $url         = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/loci?limit=2000";
+	my $url         = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/loci?limit=5000";
 	my $locus_names = [];
 	while (1) {
+		say $url if $opts{'debug'};
 		my $resp = $ua->get($url);
 		if ( $resp->is_success ) {
 			my $data = decode_json( $resp->decoded_content );
 			my $loci = $data->{'loci'};
 			foreach my $locus (@$loci) {
 				push @$locus_names, $locus->{'locus'};
+			}
+			@$locus_names = uniq @$locus_names;
+			my $this_download = @$loci;
+			my $total         = @$locus_names;
+			if ( $opts{'debug'} ) {
+				say "$this_download loci downloaded this page - $total unique in total.";
 			}
 			if ( @$loci && $data->{'links'}->{'paging'}->{'next'} ) {
 				$url = $data->{'links'}->{'paging'}->{'next'};
@@ -505,6 +542,17 @@ sub get_loci {
 		}
 	}
 	return [];
+}
+
+sub get_missing_loci {
+	my $scheme_loci = get_loci();
+	my $local_loci  = $script->{'datastore'}->run_query( 'SELECT id FROM loci', undef, { fetch => 'col_arrayref' } );
+	my %local       = map { $_ => 1 } @$local_loci;
+	my $mapped_loci = get_mapped_loci();
+	foreach my $locus (@$scheme_loci) {
+		my $locus_name = $mapped_loci->{$locus} // $locus;
+		say $locus_name if !$local{$locus_name};
+	}
 }
 
 sub get_api_token {
@@ -546,6 +594,9 @@ ${bold}--commit$norm
     
 ${bold}-d, --database$norm ${under}NAME$norm
     Database configuration name.
+    
+${bold}--debug$norm
+    Enable debugging messages.
 
 ${bold}-e, --enterobase_db$norm ${under}DBASE$norm
     Enterobase database name.
@@ -556,6 +607,9 @@ ${bold}-h, --help$norm
 ${bold}-l, --loci$norm
     Retrieve list of loci.
     
+${bold}--last_updated_before$norm ${under}DATE$norm
+    Only update loci that were last updated before selected date.
+    
 ${bold}--limit$norm ${under}LIMIT$norm
     Request LIMIT number of alleles or profiles per page. 
     
@@ -565,6 +619,10 @@ ${bold}--locus_regex$norm ${under}REGEX$norm
 ${bold}-m, --allow_missing$norm
     Allow profile definitions with missing loci - an N will be used for the
     missing alleles.
+    
+${bold}--missing$norm
+    List loci that are part of Enterobase scheme but which have not been 
+    defined in local database.
     
 ${bold}-n, --new_loci$norm
     Only download new loci (those without any existing alleles defined).
