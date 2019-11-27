@@ -56,6 +56,8 @@ GetOptions(
 	'locus_regex=s'         => \$opts{'locus_regex'},
 	'h|help'                => \$opts{'h'},
 	'missing'               => \$opts{'missing'},
+	'max_locus=s' => \$opts{'max_locus'},
+	'min_locus=s' => \$opts{'min_locus'},
 	'p|update_profiles'     => \$opts{'p'},
 	'r|route=s'             => \$opts{'r'},
 	'n|new_loci'            => \$opts{'n'},
@@ -232,6 +234,8 @@ sub update_alleles {
 		my $percent = BIGSdb::Utils::decimal_place( ( $complete / @$loci ) * 100, 1 );
 		next LOCUS if $opts{'locus_regex'} && $locus !~ /$opts{'locus_regex'}/x;
 		next LOCUS if $opts{'last_updated_before'} && $recently_updated{$locus_name};
+		next LOCUS if $opts{'min_locus'} && $locus_name lt $opts{'min_locus'};
+		next LOCUS if $opts{'max_locus'} && $locus_name gt $opts{'max_locus'};
 		if ( !$defined{$locus_name} ) {
 			say "Locus $locus_name has not been defined.";
 			next LOCUS;
@@ -619,6 +623,13 @@ ${bold}--locus_regex$norm ${under}REGEX$norm
 ${bold}-m, --allow_missing$norm
     Allow profile definitions with missing loci - an N will be used for the
     missing alleles.
+    
+${bold}--max_locus$norm ${under}STRING$norm
+    Only process loci whose names are alphabetically after the provided string.
+    
+${bold}--min_locus$norm ${under}STRING$norm
+    Only process loci whose names are alphabetically before the provided 
+    string.
     
 ${bold}--missing$norm
     List loci that are part of Enterobase scheme but which have not been 
