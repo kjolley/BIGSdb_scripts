@@ -3,7 +3,7 @@
 #(https://github.com/ntopaz/characterize_neisseria_capsule) against genome
 #records in BIGSdb Neisseria database
 #Written by Keith Jolley
-#Copyright (c) 2019, University of Oxford
+#Copyright (c) 2019-2020, University of Oxford
 #E-mail: keith.jolley@zoo.ox.ac.uk
 #
 #This is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 #You should have received a copy of the GNU General Public License
 #along with this software.  If not, see <http://www.gnu.org/licenses/>.
 #
-#Version: 20191011
+#Version: 20200218
 use strict;
 use warnings;
 use 5.010;
@@ -121,9 +121,7 @@ sub process_output {
 				add_failure_comment($id);
 				next;
 			}
-			if ( $notes !~ /Insertion_Element/xi ) {
-				$genogroup = $potential_genogroup;
-			}
+			$genogroup = $potential_genogroup;
 		}
 		if ( $genogroup eq 'Contaminated' ) {
 			add_failure_comment($id);
