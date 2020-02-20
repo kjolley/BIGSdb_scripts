@@ -141,7 +141,7 @@ sub main {
 				my $html_file = create_html_file( $isolate_id, $locus, $html );
 				( my $png_file = $html_file ) =~ s/\.html$/.png/x;
 				my $program = WKHTMLIMAGE_PATH;
-				system "xvfb-run -a $program --format jpg --quality 50 $html_file $png_file";
+				system "xvfb-run -a $program --format png --quality 50 $html_file $png_file";
 			}
 			delete_temp_files($locus_prefix);
 		}
