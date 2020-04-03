@@ -156,9 +156,9 @@ sub create_html_file {
 	say $fh '<!DOCTYPE html>';
 	say $fh '<head>';
 	say $fh '<style>';
-	say $fh '.coding {background:#ccf}';
-	say $fh '.startcodon {background:#cfc}';
-	say $fh '.stopcodon {background:#fcc}';
+	say $fh '.coding {background:#ffcd7f}';
+	say $fh '.startcodon {background:#5cc1af}';
+	say $fh '.stopcodon {background:#f48e82}';
 	say $fh '</style>';
 	say $fh '</head>';
 	say $fh '<body>';
