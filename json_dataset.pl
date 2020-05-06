@@ -18,7 +18,7 @@
 #You should have received a copy of the GNU General Public License
 #along with this software.  If not, see <http://www.gnu.org/licenses/>.
 #
-#Version: 20200501
+#Version: 20200506
 use strict;
 use warnings;
 use 5.010;
@@ -70,14 +70,11 @@ die "Script initialization failed - server too busy?\n"
   if !defined $script->{'db'};
 die "This script can only be run against an isolate database.\n"
   if ( $script->{'system'}->{'dbtype'} // '' ) ne 'isolates';
-$opts{'fields'} //= '*';
-$opts{'view'}   //= 'isolates';
 main();
 undef $script;
 
 sub main {
-	my $dataset = $script->{'datastore'}->run_query( $opts{'query'}, undef, { fetch => 'all_arrayref', slice => {} } )
-	  ;
+	my $dataset = $script->{'datastore'}->run_query( $opts{'query'}, undef, { fetch => 'all_arrayref', slice => {} } );
 	say encode_json($dataset);
 	return;
 }
