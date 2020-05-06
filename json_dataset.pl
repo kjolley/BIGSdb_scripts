@@ -61,7 +61,7 @@ my $script = BIGSdb::Offline::Script->new(
 		config_dir       => CONFIG_DIR,
 		lib_dir          => LIB_DIR,
 		dbase_config_dir => DBASE_CONFIG_DIR,
-		options          => \%opts,
+		options          => { always_run => 1, %opts },
 		instance         => $opts{'d'},
 		logger           => $logger
 	}
