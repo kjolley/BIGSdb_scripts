@@ -179,23 +179,37 @@ sub format_match_results {
 	my ( $isolate_id, $components, $reason ) = @_;
 	my $result;
 	my $notes = [];
+	my %assays = map {$_ => 1}qw(MATS SBA MEASURE);
 	foreach my $component (@$components) {
 		if ( allele_designated( $isolate_id, $component->{'locus'}, $component->{'variant'} ) ) {
 			$result = 1;
 			my @note_evidence;
 			my @evidence_list = uniq( sort { $a cmp $b } values %{ $component->{'references'} } );
+			my $evidence_count = 0;
 			foreach my $evidence (@evidence_list) {
+				$evidence_count++;
 				my @refs;
 				foreach my $ref ( sort { $a <=> $b } keys %{ $component->{'references'} } ) {
 					push @refs, $ref if $component->{'references'}->{$ref} eq $evidence;
 				}
 				if (@refs) {
 					local $" = q(, PMID:);
+					if ($assays{$evidence}){
+						if ($evidence_count == 1){
+							$evidence = qq(data derived from $evidence assays) ;
+						} elsif ($evidence_count == @evidence_list) {
+							$evidence = qq(and $evidence assays) ;
+						} else {
+							$evidence = qq(, $evidence assays) ;
+						}
+					}
 					push @note_evidence, qq($evidence (PMID:@refs));
 				}
 			}
+			
+			
 			if (@note_evidence) {
-				local $" = q(; );
+				local $" = q(, );
 				push @$notes, qq($component->{'locus'}: $component->{'variant'} $reason - @note_evidence);
 			}
 		}
