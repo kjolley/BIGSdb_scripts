@@ -1,6 +1,6 @@
-#!/usr/bin/perl -T
+#!/usr/bin/env perl
 #Generate XML file of loci for wgMLST
-#Written by Keith Jolley 2014
+#Written by Keith Jolley 2014-2020
 use strict;
 use warnings;
 use 5.010;
@@ -20,6 +20,7 @@ use Getopt::Long;
 use BIGSdb::Offline::Script;
 use List::MoreUtils qw(all);
 use constant DOMAIN => 'pubmlst.org';
+binmode( STDOUT, ':encoding(UTF-8)' );
 my %opts;
 GetOptions(
 	'd|database=s'     => \$opts{'d'},
@@ -55,8 +56,9 @@ my $script = BIGSdb::Offline::Script->new(
 	}
 );
 die "No connection to database (check logs).\n" if !defined $script->{'db'};
-die "This script can only be run against a seqdef database.\n" if ( $script->{'system'}->{'dbtype'} // '' ) ne 'sequences';
-my $loci = $script->get_selected_loci;
+die "This script can only be run against a seqdef database.\n"
+  if ( $script->{'system'}->{'dbtype'} // '' ) ne 'sequences';
+my $loci           = $script->get_selected_loci;
 my $locus_desc_sql = $script->{'db'}->prepare("SELECT * FROM locus_descriptions WHERE locus=?");
 say "<?xml version=\"1.0\" encoding=\"ISO-8859-1\" ?>";
 say "<data>";
@@ -66,12 +68,13 @@ say "      <loci>";
 
 foreach my $locus (@$loci) {
 	say "        <locus>$locus";
-	say "          <url>http://" . DOMAIN . "/cgi-bin/bigsdb/bigsdb.pl?db=$opts{'d'}&amp;page=downloadAlleles&amp;locus=$locus</url>";
+	say "          <url>http://" . DOMAIN
+	  . "/cgi-bin/bigsdb/bigsdb.pl?db=$opts{'d'}&amp;page=downloadAlleles&amp;locus=$locus</url>";
 	$locus_desc_sql->execute($locus);
-	my $desc =  $locus_desc_sql->fetchrow_hashref;
-	if ($desc){
-		foreach (qw (full_name product)){
-			if (defined $desc->{$_}){ 
+	my $desc = $locus_desc_sql->fetchrow_hashref;
+	if ($desc) {
+		foreach (qw (full_name product)) {
+			if ( defined $desc->{$_} ) {
 				chomp $desc->{$_};
 				$desc->{$_} =~ s/&/\&amp;/g;
 				say "          <$_>$desc->{$_}</$_>";
