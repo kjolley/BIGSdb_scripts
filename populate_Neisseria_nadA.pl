@@ -1,8 +1,8 @@
-#!/usr/bin/perl -T
+#!/usr/bin/env perl
 #Populate NadA_peptide with confirmed '0' if currently undefined and
 #nadA allele (NEIS1969) is defined with flag 'internal stop codon' or 
 #'contains IS element'.
-#Written by Keith Jolley 2016-2019
+#Written by Keith Jolley 2016-2020
 use strict;
 use warnings;
 use 5.010;

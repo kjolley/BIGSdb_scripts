@@ -1,6 +1,6 @@
-#!/usr/bin/perl -T
+#!/usr/bin/env perl
 #Move loci between BIGSdb databases
-#Written by Keith Jolley 2011-2015
+#Written by Keith Jolley 2011-2020
 use strict;
 use warnings;
 
@@ -15,11 +15,12 @@ use constant {
 	PASSWORD         => undef
 };
 #######End Local configuration###############################
-
 use lib (LIB_DIR);
+use FindBin;
+use lib "$FindBin::Bin/lib";
 use List::MoreUtils qw(any);
 use Getopt::Std;
-use BIGSdb_Scripts::Migrate;
+use Migrate;
 
 my %opts;
 getopts( 'a:b:c:l:h', \%opts );
@@ -35,7 +36,7 @@ if (any {!$opts{$_}} qw (a b l)){
 	exit;
 }
 $opts{'throw_busy_exception'} = 1;
-my $script = BIGSdb_Scripts::Migrate->new(
+my $script = Migrate->new(
 	{
 		config_dir       => CONFIG_DIR,
 		lib_dir          => LIB_DIR,

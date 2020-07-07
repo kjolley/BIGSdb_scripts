@@ -1,7 +1,7 @@
-#!/usr/bin/perl -T
+#!/usr/bin/env perl
 #Move sequences, designations and tags between BIGSdb databases
 #Corresponding isolate records need to exist in both databases prior to migration.
-#Written by Keith Jolley 2011-2017
+#Written by Keith Jolley 2011-2020
 use strict;
 use warnings;
 use 5.010;
@@ -17,10 +17,12 @@ use constant {
 };
 #######End Local configuration###############################
 use lib (LIB_DIR);
+use FindBin;
+use lib "$FindBin::Bin/lib";
 use List::MoreUtils qw(any);
 use Getopt::Std;
 use BIGSdb::Utils;
-use BIGSdb_Scripts::Migrate;
+use Migrate;
 use Log::Log4perl qw(get_logger);
 
 #Direct all library logging calls to screen
@@ -47,7 +49,7 @@ qq(Usage: migrate_tags.pl -a <source database config> -b <destination database c
 	exit;
 }
 $opts{'throw_busy_exception'} = 0;
-my $script = BIGSdb_Scripts::Migrate->new(
+my $script = Migrate->new(
 	{
 		config_dir       => CONFIG_DIR,
 		lib_dir          => LIB_DIR,

@@ -1,7 +1,7 @@
 #Migration of data between BIGSdb databases
 #Written by Keith Jolley
-#Copyright (c) 2011-2018, University of Oxford
-package BIGSdb_Scripts::Migrate;
+#Copyright (c) 2011-2020, University of Oxford
+package Migrate;
 use strict;
 use warnings;
 use 5.010;
