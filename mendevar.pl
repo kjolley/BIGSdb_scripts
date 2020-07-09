@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
-#Wrapper script for rMLST database species identifier code.
-#Written by Keith Jolley, 2017.
+#Perform Neisseria vaccine reactivity prediction.
+#Written by Keith Jolley, 2020.
+#Version:20200709
 use strict;
 use warnings;
 use 5.010;
