@@ -59,16 +59,19 @@ sub main {
 	say q(</dl>);
 	say q(<h2>Vaccine cross-reactivity</h2>);
 	my $outcome = process_bexsero_outcome($results);
+	my $notes   = get_bexsero_notes();
 	say q(<h3>Bexsero<sup>&reg;</sup></h3>);
-	print_results($outcome);
+	print_results( $outcome, $notes );
 	$outcome = process_trumenba_outcome($results);
+	$notes   = get_trumenba_notes();
 	say q(<h3>Trumenba<sup>&reg;</sup></h3>);
-	print_results($outcome);
+	print_results( $outcome, $notes );
 	return;
 }
 
 sub print_results {
-	my ($outcome) = @_;
+	my ( $outcome, $info ) = @_;
+	state $div = 1;
 	$outcome->{'notes'} =~ s/PMID:(\d+)/PMID:<a href="https:\/\/pubmed.ncbi.nlm.nih.gov\/$1">$1<\/a>/gx;
 	say q(<div style="display:flex">);
 	say q(<div style="padding:0.5em 0.5em 0 0">);
@@ -77,8 +80,15 @@ sub print_results {
 	say q(<p style="background:#88a;color:#fff;font-size:1.5em;padding:0.2em 0.5em;text-align:center;)
 	  . qq(margin-top:-0.5em;min-width:6em">$outcome->{'result'}</p>);
 	say q(</div>);
-	say qq(<div style="margin:1em"><p>$outcome->{'notes'}</p></div>);
+	say qq(<div style="margin:-3em 1em 1em 1em">);
+	say qq(<div id="notes_$div" class="expandable_retracted_large">);
+	say qq(<h4>Explanation:</h4><p>$outcome->{'notes'}</p>);
+	say q(<h4>Notes:</h4>);
+	say qq(<div class="scrollable">$info</div></div>);
+	say qq(<div class="expand_link" id="expand_notes_$div"><span class="fas fa-chevron-down"></span></div>);
 	say q(</div>);
+	say q(</div>);
+	$div++;
 }
 
 sub process_bexsero_outcome {
@@ -105,6 +115,71 @@ sub process_bexsero_outcome {
 	};
 }
 
+sub get_bexsero_notes {
+	return << 'NOTES';
+<p style="color:#606060"><strong>Bexsero<sup>&reg;</sup> (4CMenB) is a multicomponent vaccine.</strong></p>
+<ul>
+<li>Protein-based meningococcal vaccines contain surface proteins as vaccine antigens, these proteins 
+demonstrate nucleotide and amino acid sequence diversity.</li>
+<li>Peptide sequence diversity can be analysed using the Bexsero Antigen Sequence Typing (BAST) 
+scheme<sup>1</sup>.</li>
+<li>Bexsero<sup>&reg;</sup> contains: fHbp peptide 1; NHBA peptide 2; NadA peptide 8; PorA VR2 4.</li>
+</ul>
+<p>The Deduced Vaccine Antigen Reactivity (MenDeVar) Index was developed to combine multiple, complex data
+that inform the reactivity of each vaccine against specific antigenic variants.</p>
+<p style="color:#606060"><strong>The MenDeVAR Index:</strong></p>
+<ul>
+<li><span class="fa-stack" style="margin-left:0.5em;font-size:0.8em">
+<span class="fas fa-circle fa-stack-2x" style="color:#009800"></span>
+<span class="fas fa-traffic-light fa-stack-1x fa-inverse"></span></span> isolate contains &ge;1 exact 
+sequence match to antigenic variants found in the vaccine.</li>
+<li><span class="fa-stack" style="margin-left:0.5em;font-size:0.8em">
+<span class="fas fa-circle fa-stack-2x" style="color:#ef780f"></span>
+<span class="fas fa-traffic-light fa-stack-1x fa-inverse"></span></span> isolate contains &ge;1 antigenic 
+variant deemed cross-reactive to vaccine variants through experimental studies.</li>
+<li><span class="fa-stack" style="margin-left:0.5em;font-size:0.8em">
+<span class="fas fa-circle fa-stack-2x" style="color:#d90013"></span>
+<span class="fas fa-traffic-light fa-stack-1x fa-inverse"></span></span> all the isolate's antigenic 
+variants have been deemed not cross-reactive to vaccine variants through experimental studies.</li>
+<li><span class="fa-stack" style="margin-left:0.5em;font-size:0.8em">
+<span class="fas fa-circle fa-stack-2x" style="color:#d3d3d3"></span>
+<span class="fas fa-traffic-light fa-stack-1x fa-inverse"></span></span> isolate contains antigens 
+for which there is insufficient data from or are yet to be tested in experimental studies.</li>
+</ul>
+
+<p style="color:#606060"><strong>It is important to understand the caveats to interpreting the MenDeVar Index:</strong></p>
+<p><strong>Source of data</strong> - These data combine multiple sources of information including: 
+peptide sequence identity through whole genome sequencing; experimental assays developed as indirect 
+measures of the breadth of vaccine protection against diverse meningococci; and assays developed to 
+assess immunogenicity. The Meningococcal Antigen Typing System (MATS)<sup>2</sup> assay was used for 
+Bexsero<sup>&reg;</sup>.</p>  <p><strong>Cross-reactivity definition</strong> - An antigenic variant 
+was considered cross-reactive if it had been tested in &ge;5 isolates/subjects and was above the 
+accepted threshold in &ge;75% of those isolates. This was established through combined analysis of 
+published experimental studies (PMID provided for each variant), not from genomic data. These assays 
+were based on serogroup B disease isolates.</p>  <p><strong>Protein expression</strong> - We have not 
+inferred from genomic data, therefore there may be isolates that possess genes but do no express the 
+protein <i>in vivo</i>.</p>
+
+<p><strong>Age of vaccinees</strong> - For MATS assay development<sup>2</sup>, Bexsero<sup>&reg;</sup> 
+vaccine recipients were infants who had received 3 doses of vaccine and then a booster at 12 months. 
+The pooled sera used for the MATS assay were taken from the toddlers at 13 months of age.</p>
+
+<ol>
+<li>Brehony C, Rodrigues CMC, Borrow R, <i>et al.</i> Distribution of Bexsero<sup>&reg;</sup> Antigen 
+Sequence Types (BASTs) in invasive meningococcal disease isolates: Implications for immunisation. 
+<a href="https://www.ncbi.nlm.nih.gov/pubmed/27521232" target="_blank">Vaccine 2016 34(39):4690-7</a></li>
+<li>Donnelly J, Medini D, Boccadifuoco G, <i>et al</i>. Qualitative and quantitative assessment of 
+meningococcal antigens to evaluate the potential strain coverage of protein-based vaccines. 
+<a href="https://www.ncbi.nlm.nih.gov/pubmed/20962280" target="_blank">Proc Natl Acad Sci USA 2010;107(45):19490-19495</a>
+</li>
+</ol>
+
+<p><em>Please note this work is in development and subject to change. When the final version is 
+available the citation will be published here. Please contact 
+<a href="mailto:charlene.rodrigues@zoo.ox.ac.uk">us</a> if you have queries.</em></p>
+NOTES
+}
+
 sub process_trumenba_outcome {
 	my ($results) = @_;
 	if ( !contains_trumenba_antigens($results) ) {
@@ -123,6 +198,67 @@ sub process_trumenba_outcome {
 		result => 'insufficient data',
 		notes  => '<ul><li>insufficient data about cross-reactivity of antigens to make an assessment</li></ul>'
 	};
+}
+
+sub get_trumenba_notes {
+	return << 'NOTES';
+<p style="color:#606060"><strong>Trumenba<sup>&reg;</sup> (rLP2086) is a bivalent fHbp-containing vaccine.</strong></p>
+<ul>
+<li>Protein-based meningococcal vaccines contain surface proteins as vaccine antigens, these proteins demonstrate 
+nucleotide and amino acid sequence diversity.</li>
+<li>Peptide sequence diversity can be analysed using the fhbp peptide locus.</li>
+<li>Trumenba<sup>&reg;</sup> vaccine contains fHbp peptides 45 and 551.</li>
+</ul>
+<p>The Deduced Vaccine Antigen Reactivity (MenDeVAR ) Index was developed to combine multiple, complex data that 
+inform the reactivity of each vaccine against specific antigenic variants.</p>
+
+<p style="color:#606060"><strong>The MenDeVAR Index:</strong></p>
+<ul>
+<li><span class="fa-stack" style="margin-left:0.5em;font-size:0.8em">
+<span class="fas fa-circle fa-stack-2x" style="color:#009800"></span>
+<span class="fas fa-traffic-light fa-stack-1x fa-inverse"></span></span> isolate contains &ge;1 exact sequence 
+match to antigenic variants found in the vaccine.</li>
+<li><span class="fa-stack" style="margin-left:0.5em;font-size:0.8em">
+<span class="fas fa-circle fa-stack-2x" style="color:#ef780f"></span>
+<span class="fas fa-traffic-light fa-stack-1x fa-inverse"></span></span> isolate contains &ge;1 antigenic 
+variant deemed cross-reactive to vaccine variants through experimental studies.</li>
+<li><span class="fa-stack" style="margin-left:0.5em;font-size:0.8em">
+<span class="fas fa-circle fa-stack-2x" style="color:#d90013"></span>
+<span class="fas fa-traffic-light fa-stack-1x fa-inverse"></span></span> all the isolate's antigenic 
+variants have been deemed not cross-reactive to vaccine variants through experimental studies.</li>
+<li><span class="fa-stack" style="margin-left:0.5em;font-size:0.8em">
+<span class="fas fa-circle fa-stack-2x" style="color:#d3d3d3"></span>
+<span class="fas fa-traffic-light fa-stack-1x fa-inverse"></span></span> isolate contains antigens 
+for which there is insufficient data from or are yet to be tested in experimental studies.</li>
+</ul>
+
+<p style="color:#606060"><strong>It is important to understand the caveats to interpreting the 
+MenDeVAR Index:</strong></p>
+<p><strong>Source of data</strong> - These data combine multiple sources of information including: 
+peptide sequence identity through whole genome sequencing; experimental assays developed as indirect 
+measures of the breadth of vaccine protection against diverse meningococci; and assays developed to 
+assess immunogenicity. The meningococcal antigen surface expression (MEASURE)<sup>2</sup> and serum 
+bactericidal activity (SBA) assays were used for Trumenba<sup>&reg;</sup>.</p>    
+<p><strong>Cross-reactivity definition</strong> - An antigenic variant was considered cross-reactive 
+if it had been tested in &ge;5 isolates/subjects and was above the accepted threshold in &ge;75% of 
+those isolates. This was established through combined analysis of published experimental studies 
+(PMID provided for each variant), not from genomic data. These assays were based on serogroup B disease 
+isolates.</p>
+<p><strong>Age of vaccinees</strong> - The age of vaccine recipients in the experimental studies varies 
+widely, ranging from toddlers to adults, and needs to be taken into consideration when interpreting results. 
+Vaccine studies used different schedules and doses of vaccines.    
+<ol>
+<li>Jiang HQ, Hoiseth SK, Harris SL, <i>et al.</i> Broad vaccine coverage predicted for a bivalent 
+recombinant factor H binding protein based vaccine to prevent serogroup B meningococcal disease. 
+<a href="https://www.ncbi.nlm.nih.gov/pubmed/20619376" target="_blank">Vaccine 2010;28(37):6086-93</a></li>
+<li>McNeil LK, Donald RGK, Gribenko A, <i>et al.</i> Predicting the Susceptibility of Meningococcal Serogroup 
+B Isolates to Bactericidal Antibodies Elicited by Bivalent rLP2086, a Novel Prophylactic Vaccine. 
+<a href="https://www.ncbi.nlm.nih.gov/pubmed/29535195" target="_blank">mBio 2018;9(2):e00036-18</a></li>
+</ol>
+<p><em>Please note this work is in development and subject to change. When the final version is available the 
+citation will be published here. Please contact <a href="mailto:charlene.rodrigues@zoo.ox.ac.uk">us</a> 
+if you have queries.</em></p>	
+NOTES
 }
 
 sub extract_results {
