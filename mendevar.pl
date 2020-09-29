@@ -81,7 +81,7 @@ sub print_results {
 	  . qq(margin-top:-0.5em;min-width:6em">$outcome->{'result'}</p>);
 	say q(</div>);
 	say qq(<div style="margin:-3em 1em 1em 1em">);
-	say qq(<div id="notes_$div" class="expandable_retracted_large">);
+	say qq(<div id="notes_$div" class="expandable_retracted_large" style="overflow-x:auto;overflow-y:hidden">);
 	say qq(<h4>Explanation:</h4><p>$outcome->{'notes'}</p>);
 	say q(<h4>Notes:</h4>);
 	say qq(<div class="scrollable">$info</div></div>);
