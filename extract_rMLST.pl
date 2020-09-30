@@ -1,4 +1,4 @@
-#!/usr/bin/perl -T
+#!/usr/bin/env perl
 #Extract rMLST alleles for genomes with Genbank accessions
 #Written by Keith Jolley, 2012-2018.
 use strict;
