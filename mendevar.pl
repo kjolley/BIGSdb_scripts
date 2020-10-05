@@ -81,7 +81,7 @@ sub print_results {
 	  . qq(margin-top:-0.5em;min-width:6em">$outcome->{'result'}</p>);
 	say q(</div>);
 	say qq(<div style="margin:-3em 1em 1em 1em">);
-	say qq(<div id="notes_$div" class="expandable_retracted_large" style="overflow-x:auto;overflow-y:hidden">);
+	say qq(<div id="notes_$div" class="expandable_retracted_large">);
 	say qq(<h4>Explanation:</h4><p>$outcome->{'notes'}</p>);
 	say q(<h4>Notes:</h4>);
 	say qq(<div class="scrollable">$info</div></div>);
@@ -125,7 +125,7 @@ demonstrate nucleotide and amino acid sequence diversity.</li>
 scheme<sup>1</sup>.</li>
 <li>Bexsero<sup>&reg;</sup> contains: fHbp peptide 1; NHBA peptide 2; NadA peptide 8; PorA VR2 4.</li>
 </ul>
-<p>The Deduced Vaccine Antigen Reactivity (MenDeVar) Index was developed to combine multiple, complex data
+<p>The Deduced Vaccine Antigen Reactivity (MenDeVAR) Index was developed to combine multiple, complex data
 that inform the reactivity of each vaccine against specific antigenic variants.</p>
 <p style="color:#606060"><strong>The MenDeVAR Index:</strong></p>
 <ul>
@@ -147,7 +147,7 @@ variants have been deemed not cross-reactive to vaccine variants through experim
 for which there is insufficient data from or are yet to be tested in experimental studies.</li>
 </ul>
 
-<p style="color:#606060"><strong>It is important to understand the caveats to interpreting the MenDeVar Index:</strong></p>
+<p style="color:#606060"><strong>It is important to understand the caveats to interpreting the MenDeVAR Index:</strong></p>
 <p><strong>Source of data</strong> - These data combine multiple sources of information including: 
 peptide sequence identity through whole genome sequencing; experimental assays developed as indirect 
 measures of the breadth of vaccine protection against diverse meningococci; and assays developed to 
@@ -173,10 +173,9 @@ meningococcal antigens to evaluate the potential strain coverage of protein-base
 <a href="https://www.ncbi.nlm.nih.gov/pubmed/20962280" target="_blank">Proc Natl Acad Sci USA 2010;107(45):19490-19495</a>
 </li>
 </ol>
-
-<p><em>Please note this work is in development and subject to change. When the final version is 
-available the citation will be published here. Please contact 
-<a href="mailto:charlene.rodrigues@zoo.ox.ac.uk">us</a> if you have queries.</em></p>
+<p><em>MenDeVAR is described in <a href="https://doi.org/10.1101/2020.08.18.256834">Rodrigues <i>et al.</i> 2020, 
+bioRxiv 2020.08.18.256834</a>.  Please contact <a href="mailto:charlene.rodrigues@zoo.ox.ac.uk">us</a> 
+if you have queries.</em></p>
 NOTES
 }
 
@@ -255,9 +254,9 @@ recombinant factor H binding protein based vaccine to prevent serogroup B mening
 B Isolates to Bactericidal Antibodies Elicited by Bivalent rLP2086, a Novel Prophylactic Vaccine. 
 <a href="https://www.ncbi.nlm.nih.gov/pubmed/29535195" target="_blank">mBio 2018;9(2):e00036-18</a></li>
 </ol>
-<p><em>Please note this work is in development and subject to change. When the final version is available the 
-citation will be published here. Please contact <a href="mailto:charlene.rodrigues@zoo.ox.ac.uk">us</a> 
-if you have queries.</em></p>	
+<p><em>MenDeVAR is described in <a href="https://doi.org/10.1101/2020.08.18.256834">Rodrigues <i>et al.</i> 2020, 
+bioRxiv 2020.08.18.256834</a>.  Please contact <a href="mailto:charlene.rodrigues@zoo.ox.ac.uk">us</a> 
+if you have queries.</em></p>
 NOTES
 }
 

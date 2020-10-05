@@ -68,9 +68,9 @@ sub main {
 		undef, { fetch => 'all_arrayref', slice => {} } );
 	eval {
 		$script->{'db'}->do( 'DELETE FROM profile_fields WHERE scheme_id=? AND scheme_field=?',
-			undef, $opts{'scheme'}, 'MenDeVar_Bexsero_reactivity' );
+			undef, $opts{'scheme'}, 'MenDeVAR_Bexsero_reactivity' );
 		$script->{'db'}->do( 'DELETE FROM profile_fields WHERE scheme_id=? AND scheme_field=?',
-			undef, $opts{'scheme'}, 'MenDeVar_Trumenba_reactivity' );
+			undef, $opts{'scheme'}, 'MenDeVAR_Trumenba_reactivity' );
 		foreach my $profile (@$bast_profiles) {
 			my $variants = {};
 			foreach my $locus (LOCI) {
@@ -98,12 +98,12 @@ sub main {
 			}
 			$script->{'db'}->do(
 				'INSERT INTO profile_fields (scheme_id,scheme_field,profile_id,value,curator,datestamp) '
-				  . 'VALUES (?,?,?,?,?,?)', undef, $opts{'scheme'}, 'MenDeVar_Bexsero_reactivity', $profile->{'bast'}, $bexsero,
+				  . 'VALUES (?,?,?,?,?,?)', undef, $opts{'scheme'}, 'MenDeVAR_Bexsero_reactivity', $profile->{'bast'}, $bexsero,
 				0, 'now'
 			);
 			$script->{'db'}->do(
 				'INSERT INTO profile_fields (scheme_id,scheme_field,profile_id,value,curator,datestamp) '
-				  . 'VALUES (?,?,?,?,?,?)', undef, $opts{'scheme'}, 'MenDeVar_Trumenba_reactivity', $profile->{'bast'}, $trumenba,
+				  . 'VALUES (?,?,?,?,?,?)', undef, $opts{'scheme'}, 'MenDeVAR_Trumenba_reactivity', $profile->{'bast'}, $trumenba,
 				0, 'now'
 			);
 			say qq($profile->{'bast'}\t$bexsero\t$trumenba) if !$opts{'quiet'};
