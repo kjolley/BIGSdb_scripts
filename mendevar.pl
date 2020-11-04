@@ -173,8 +173,8 @@ meningococcal antigens to evaluate the potential strain coverage of protein-base
 <a href="https://www.ncbi.nlm.nih.gov/pubmed/20962280" target="_blank">Proc Natl Acad Sci USA 2010;107(45):19490-19495</a>
 </li>
 </ol>
-<p><em>MenDeVAR is described in <a href="https://doi.org/10.1101/2020.08.18.256834">Rodrigues <i>et al.</i> 2020, 
-bioRxiv 2020.08.18.256834</a>.  Please contact <a href="mailto:charlene.rodrigues@zoo.ox.ac.uk">us</a> 
+<p><em>MenDeVAR is described in <a href="https://pubmed.ncbi.nlm.nih.gov/33055180/">Rodrigues <i>et al.</i> 2020, 
+J Clin Microbiol [in press]</a>.  Please contact <a href="mailto:charlene.rodrigues@zoo.ox.ac.uk">us</a> 
 if you have queries.</em></p>
 NOTES
 }
@@ -254,8 +254,8 @@ recombinant factor H binding protein based vaccine to prevent serogroup B mening
 B Isolates to Bactericidal Antibodies Elicited by Bivalent rLP2086, a Novel Prophylactic Vaccine. 
 <a href="https://www.ncbi.nlm.nih.gov/pubmed/29535195" target="_blank">mBio 2018;9(2):e00036-18</a></li>
 </ol>
-<p><em>MenDeVAR is described in <a href="https://doi.org/10.1101/2020.08.18.256834">Rodrigues <i>et al.</i> 2020, 
-bioRxiv 2020.08.18.256834</a>.  Please contact <a href="mailto:charlene.rodrigues@zoo.ox.ac.uk">us</a> 
+<p><em>MenDeVAR is described in <a href="https://pubmed.ncbi.nlm.nih.gov/33055180/">Rodrigues <i>et al.</i> 2020, 
+J Clin Microbiol [in press]</a>.  Please contact <a href="mailto:charlene.rodrigues@zoo.ox.ac.uk">us</a> 
 if you have queries.</em></p>
 NOTES
 }
