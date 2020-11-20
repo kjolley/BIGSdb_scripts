@@ -183,11 +183,11 @@ sub get_rst_counts {
 	$taxonomy //= get_taxonomy();
 	my $rst_counts = {};
 	if ( $opts{'rst_count'} ) {
-		my $table    = 'mv_scheme_' . RMLST_SCHEME_ID;
-		my $rst_data = $seqdef_db->{'datastore'}->run_query(
-			"SELECT species,count(*) AS count FROM $table WHERE species IS NOT NULL GROUP BY species",
-			undef, { fetch => 'all_arrayref', slice => {} }
-		);
+		my $table = 'mv_scheme_' . RMLST_SCHEME_ID;
+		my $rst_data =
+		  $seqdef_db->{'datastore'}
+		  ->run_query( "SELECT species,count(*) AS count FROM $table WHERE species IS NOT NULL GROUP BY species",
+			undef, { fetch => 'all_arrayref', slice => {} } );
 		$seqdef_db->{'db'}->commit;
 		foreach my $values (@$rst_data) {
 			foreach my $rank ( RANKS, 'species' ) {
@@ -444,9 +444,11 @@ sub make_tree {
 	my $xmfa_file = TMP_DIR . "/${job_id}.xmfa";
 	open( my $fh, '>', $xmfa_file )
 	  or $logger->error("Cannot open output file $xmfa_file for writing");
-
+	$isolate_db->{'dataConnector'}->drop_all_connections;
+	$seqdef_db->{'dataConnector'}->drop_all_connections;
 	foreach my $locus_name (@$loci) {
 		my %no_seq;
+		$seqdef_db->reconnect;
 		my $locus_info   = $seqdef_db->{'datastore'}->get_locus_info($locus_name);
 		my $locus        = $seqdef_db->{'datastore'}->get_locus($locus_name);
 		my $temp         = BIGSdb::Utils::get_random();
@@ -480,6 +482,7 @@ sub make_tree {
 			}
 		}
 		close $fh_unaligned;
+		$seqdef_db->{'dataConnector'}->drop_all_connections;
 		append_sequences(
 			{
 				fh                => $fh,
@@ -516,6 +519,8 @@ sub make_tree {
 	my $duration = get_nice_duration( time - $start_time );
 	say "done ($duration)." if !$opts{'quiet'};
 	unlink $fasta_file;
+	$isolate_db->reconnect;
+	$seqdef_db->reconnect;
 	return;
 }
 
