@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 #Generate trees from rMLST profile data.
-#Written by Keith Jolley, 2017-2018
+#Written by Keith Jolley, 2017-2020
+#Version 20201120
 use strict;
 use warnings;
 use 5.010;
