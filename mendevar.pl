@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #Perform Neisseria vaccine reactivity prediction.
-#Written by Keith Jolley, 2020.
-#Version:20200709
+#Written by Keith Jolley, 2020-2021.
+#Version:20210104
 use strict;
 use warnings;
 use 5.010;
@@ -174,7 +174,7 @@ meningococcal antigens to evaluate the potential strain coverage of protein-base
 </li>
 </ol>
 <p><em>MenDeVAR is described in <a href="https://pubmed.ncbi.nlm.nih.gov/33055180/">Rodrigues <i>et al.</i> 2020, 
-J Clin Microbiol [in press]</a>.  Please contact <a href="mailto:charlene.rodrigues@zoo.ox.ac.uk">us</a> 
+J Clin Microbiol 59(1):e02161-20</a>.  Please contact <a href="mailto:charlene.rodrigues@zoo.ox.ac.uk">us</a> 
 if you have queries.</em></p>
 NOTES
 }
@@ -255,7 +255,7 @@ B Isolates to Bactericidal Antibodies Elicited by Bivalent rLP2086, a Novel Prop
 <a href="https://www.ncbi.nlm.nih.gov/pubmed/29535195" target="_blank">mBio 2018;9(2):e00036-18</a></li>
 </ol>
 <p><em>MenDeVAR is described in <a href="https://pubmed.ncbi.nlm.nih.gov/33055180/">Rodrigues <i>et al.</i> 2020, 
-J Clin Microbiol [in press]</a>.  Please contact <a href="mailto:charlene.rodrigues@zoo.ox.ac.uk">us</a> 
+J Clin Microbiol 59(1):e02161-20</a>.  Please contact <a href="mailto:charlene.rodrigues@zoo.ox.ac.uk">us</a> 
 if you have queries.</em></p>
 NOTES
 }
