@@ -149,7 +149,9 @@ sub get_taxonomy {
 	if ( $opts{'public'} ) {
 		$qry .= q( AND field_value IN (SELECT species FROM public));
 	}
-	my $data = $isolate_db->{'datastore'}->run_query( $qry, undef, { fetch => 'all_arrayref', slice => {} } );
+	$isolate_db->reconnect;    #The connection can be dropped due to network issues in long-running processes
+	my $data =
+	  $isolate_db->{'datastore'}->run_query( $qry, undef, { fetch => 'all_arrayref', slice => {} } );
 	$isolate_db->{'db'}->commit;    #Prevent idle in transaction locks
 	my $taxonomy = {};
 	map { $taxonomy->{ $_->{'field_value'} }->{ $_->{'attribute'} } = $_->{'value'} } @$data;
@@ -447,6 +449,7 @@ sub make_tree {
 	  or $logger->error("Cannot open output file $xmfa_file for writing");
 	$isolate_db->{'dataConnector'}->drop_all_connections;
 	$seqdef_db->{'dataConnector'}->drop_all_connections;
+
 	foreach my $locus_name (@$loci) {
 		my %no_seq;
 		$seqdef_db->reconnect;
