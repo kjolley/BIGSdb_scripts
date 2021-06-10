@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 #Generate trees from rMLST profile data.
 #Written by Keith Jolley, 2017-2021
-#Version 20210527
+#Version 20210610
 use strict;
 use warnings;
 use 5.010;
@@ -118,9 +118,10 @@ sub list_rsts {
 
 sub get_rsts {
 	my ( $rank, $taxon ) = @_;
-	my $data         = get_taxonomy( $rank, $taxon );
-	my @species      = sort keys %$data;
-	my $temp_table   = $seqdef_db->{'datastore'}->create_temp_list_table_from_array( 'text', \@species );
+	my $data = get_taxonomy( $rank, $taxon );
+	my @species = sort keys %$data;
+	$seqdef_db->reconnect;    #The connection can be dropped due to network issues in long-running processes
+	my $temp_table = $seqdef_db->{'datastore'}->create_temp_list_table_from_array( 'text', \@species );
 	my $scheme_cache = 'mv_scheme_' . RMLST_SCHEME_ID;
 	my $list =
 	  $seqdef_db->{'datastore'}->run_query(
