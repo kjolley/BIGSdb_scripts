@@ -5,6 +5,7 @@
 #
 #Outputs CSV file for visualisations.
 #GPL3.
+#Version 20211130
 use strict;
 use warnings;
 use 5.010;
@@ -14,7 +15,6 @@ use constant {
 	LIB_DIR          => '/usr/local/lib',
 	DBASE_CONFIG_DIR => '/etc/bigsdb/dbases',
 	DBASE_CONFIG     => 'pubmlst_neisseria_isolates',
-	PROJECT_ID       => 3
 };
 #######End Local configuration#############################################
 use lib (LIB_DIR);
@@ -24,7 +24,8 @@ use Getopt::Long qw(:config no_ignore_case);
 my %opts;
 GetOptions(
 	'fields=s'   => \$opts{'fields'},
-	'headings=s' => \$opts{'headings'}
+	'headings=s' => \$opts{'headings'},
+	'project=i'  => \$opts{'project'}
 );
 
 #Direct all library logging calls to screen
@@ -44,6 +45,7 @@ my $script = BIGSdb::Offline::Script->new(
 die "Script initialization failed.\n" if !defined $script->{'db'};
 $opts{'fields'}   //= q(age_range);
 $opts{'headings'} //= $opts{'fields'};
+$opts{'project'}  //= 185;
 my $fields   = [ split /\s*,\s*/x, $opts{'fields'} ];
 my $headings = [ split /\s*,\s*/x, $opts{'headings'} ];
 check_fields_and_headings( $fields, $headings );
@@ -68,8 +70,9 @@ sub main {
 	my $isolates = $script->{'datastore'}->run_query(
 		"SELECT @$fields FROM isolates i LEFT JOIN "
 		  . 'temp_isolates_scheme_fields_1 s ON i.id=s.id WHERE i.id IN '
-		  . '(SELECT isolate_id FROM project_members WHERE project_id=?)',
-		PROJECT_ID,
+		  . '(SELECT isolate_id FROM project_members WHERE project_id=?) '
+		  . 'AND i.new_version IS NULL',
+		$opts{'project'},
 		{ fetch => 'all_arrayref', slice => {} }
 	);
 	my $dataset = {};
