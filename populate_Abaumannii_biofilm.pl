@@ -36,6 +36,7 @@ my $script = BIGSdb::Offline::Script->new(
 	}
 );
 main();
+undef $script;
 
 sub main {
 	my $ids = get_isolate_ids();
