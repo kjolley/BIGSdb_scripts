@@ -10,7 +10,6 @@ use constant {
 	LIB_DIR          => '/usr/local/lib',
 	DBASE_CONFIG_DIR => '/etc/bigsdb/dbases',
 	DBASE_CONFIG     => 'pubmlst_abaumannii_isolates',
-	CURATOR_ID       => -2
 };
 #######End Local configuration#############################################
 use lib (LIB_DIR);
