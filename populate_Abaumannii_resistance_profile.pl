@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 #Populate A. baumannii resistance profile field based on SIR values of
-#indivual antibiotic fields
+#individual antibiotic fields
 #Written by Julia Moreno Manjon and Keith Jolley 2022
 use strict;
 use warnings;
