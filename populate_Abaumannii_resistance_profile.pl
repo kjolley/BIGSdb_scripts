@@ -168,38 +168,15 @@ sub antib_RI_formula {
 	  };
 
 	#Define variable as empty string if undefined.
-	$_ //= '' foreach (
-		$amikacin_SIR,     $gentamicin_SIR, $cefotaxime_SIR, $cefepime_SIR, $levofloxacin_SIR,
-		$tetracycline_SIR, $imipenem_SIR,   $meropenem_SIR,  $colistin_SIR
-	);
 	my $RI_count = 0;
 	my %allowed = ( 'R' => 1, 'I' => 1 );
-	if ( $allowed{$amikacin_SIR} ) {
-		$RI_count++;
-	}
-	if ( $allowed{$gentamicin_SIR} ) {
-		$RI_count++;
-	}
-	if ( $allowed{$cefotaxime_SIR} ) {
-		$RI_count++;
-	}
-	if ( $allowed{$cefepime_SIR} ) {
-		$RI_count++;
-	}
-	if ( $allowed{$levofloxacin_SIR} ) {
-		$RI_count++;
-	}
-	if ( $allowed{$tetracycline_SIR} ) {
-		$RI_count++;
-	}
-	if ( $allowed{$imipenem_SIR} ) {
-		$RI_count++;
-	}
-	if ( $allowed{$meropenem_SIR} ) {
-		$RI_count++;
-	}
-	if ( $allowed{$colistin_SIR} ) {
-		$RI_count++;
+	foreach my $SIR (
+		$amikacin_SIR,     $gentamicin_SIR, $cefotaxime_SIR, $cefepime_SIR, $levofloxacin_SIR,
+		$tetracycline_SIR, $imipenem_SIR,   $meropenem_SIR,  $colistin_SIR
+	  )
+	{
+		$SIR //= '';
+		$RI_count++ if $allowed{$SIR};
 	}
 	return $RI_count;
 }
@@ -217,38 +194,15 @@ sub antib_S_formula {
 	  };
 
 	#Define variable as empty string if undefined.
-	$_ //= '' foreach (
-		$amikacin_SIR,     $gentamicin_SIR, $cefotaxime_SIR, $cefepime_SIR, $levofloxacin_SIR,
-		$tetracycline_SIR, $imipenem_SIR,   $meropenem_SIR,  $colistin_SIR
-	);
 	my $S_count = 0;
 	my %allowed = ( 'S' => 1 );
-	if ( $allowed{$amikacin_SIR} ) {
-		$S_count++;
-	}
-	if ( $allowed{$gentamicin_SIR} ) {
-		$S_count++;
-	}
-	if ( $allowed{$cefotaxime_SIR} ) {
-		$S_count++;
-	}
-	if ( $allowed{$cefepime_SIR} ) {
-		$S_count++;
-	}
-	if ( $allowed{$levofloxacin_SIR} ) {
-		$S_count++;
-	}
-	if ( $allowed{$tetracycline_SIR} ) {
-		$S_count++;
-	}
-	if ( $allowed{$imipenem_SIR} ) {
-		$S_count++;
-	}
-	if ( $allowed{$meropenem_SIR} ) {
-		$S_count++;
-	}
-	if ( $allowed{$colistin_SIR} ) {
-		$S_count++;
+	foreach my $SIR (
+		$amikacin_SIR,     $gentamicin_SIR, $cefotaxime_SIR, $cefepime_SIR, $levofloxacin_SIR,
+		$tetracycline_SIR, $imipenem_SIR,   $meropenem_SIR,  $colistin_SIR
+	  )
+	{
+		$SIR //= '';
+		$S_count++ if $allowed{$SIR};
 	}
 	return $S_count;
 }
