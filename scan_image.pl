@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #Written by Keith Jolley
 #Generate image file for Zooniverse from results of BIGSdb scan.
-#Version: 20200218
+#Version: 20220531
 use strict;
 use warnings;
 use 5.010;
@@ -105,8 +105,8 @@ sub main {
 		system        => $script->{'system'},
 		config        => $scan->{'config'},
 		contigManager => $scan->{'contigManager'},
+		datastore     => $scan->{'datastore'}
 	);
-
 	foreach my $isolate_id (@$isolates) {
 		foreach my $locus (@$loci) {
 			my ( $exact_matches, $partial_matches ) =
