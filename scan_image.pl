@@ -38,7 +38,7 @@ GetOptions(
 	'I|exclude_isolates=s' => \$opts{'I'},
 	'l|loci=s'             => \$opts{'l'},
 	'L|exclude_loci=s'     => \$opts{'L'},
-	'max_length=i' => \$opts{'max_length'},
+	'max_length=i'         => \$opts{'max_length'},
 	'm|min_size=i'         => \$opts{'m'},
 	'p|projects=s'         => \$opts{'p'},
 	'P|exclude_projects=s' => \$opts{'P'},
@@ -108,11 +108,12 @@ sub main {
 		contigManager => $scan->{'contigManager'},
 		datastore     => $scan->{'datastore'}
 	);
+
 	foreach my $isolate_id (@$isolate_list) {
 		foreach my $locus (@$loci) {
-			if (defined $opts{'max_length'}){
+			if ( defined $opts{'max_length'} ) {
 				my $locus_obj = $script->{'datastore'}->get_locus($locus);
-				my $stats = $locus_obj->get_stats;
+				my $stats     = $locus_obj->get_stats;
 				next if $stats->{'min_length'} > $opts{'max_length'};
 			}
 			my ( $exact_matches, $partial_matches ) =
