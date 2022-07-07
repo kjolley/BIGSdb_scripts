@@ -107,7 +107,7 @@ sub main {
 		contigManager => $scan->{'contigManager'},
 		datastore     => $scan->{'datastore'}
 	);
-	foreach my $isolate_id (@$isolates) {
+	foreach my $isolate_id (@$isolate_list) {
 		foreach my $locus (@$loci) {
 			my ( $exact_matches, $partial_matches ) =
 			  $scan->blast( $params, $locus, $isolate_id, "${isolate_prefix}_$isolate_id", $locus_prefix );
