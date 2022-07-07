@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #Written by Keith Jolley
 #Generate image file for Zooniverse from results of BIGSdb scan.
-#Version: 20220531
+#Version: 20220707
 use strict;
 use warnings;
 use 5.010;
@@ -38,6 +38,7 @@ GetOptions(
 	'I|exclude_isolates=s' => \$opts{'I'},
 	'l|loci=s'             => \$opts{'l'},
 	'L|exclude_loci=s'     => \$opts{'L'},
+	'max_length=i' => \$opts{'max_length'},
 	'm|min_size=i'         => \$opts{'m'},
 	'p|projects=s'         => \$opts{'p'},
 	'P|exclude_projects=s' => \$opts{'P'},
@@ -109,6 +110,11 @@ sub main {
 	);
 	foreach my $isolate_id (@$isolate_list) {
 		foreach my $locus (@$loci) {
+			if (defined $opts{'max_length'}){
+				my $locus_obj = $script->{'datastore'}->get_locus($locus);
+				my $stats = $locus_obj->get_stats;
+				next if $stats->{'min_length'} > $opts{'max_length'};
+			}
 			my ( $exact_matches, $partial_matches ) =
 			  $scan->blast( $params, $locus, $isolate_id, "${isolate_prefix}_$isolate_id", $locus_prefix );
 			next if ref $exact_matches && @$exact_matches;
@@ -237,7 +243,11 @@ ${bold}-l, --loci$norm ${under}LIST$norm
     Comma-separated list of loci to scan (ignored if -s used).
 
 ${bold}-L, --exclude_loci$norm ${under}LIST$norm
-    Comma-separated list of loci to exclude
+    Comma-separated list of loci to exclude.
+
+${bold}--max_length$norm ${under}LENGTH$norm
+    Don't process loci where the defined smallest allele is larger than the 
+    value set here. 
 
 ${bold}-m, --min_size$norm ${under}SIZE$norm
     Minimum size of seqbin (bp) - limit search to isolates with at least this
