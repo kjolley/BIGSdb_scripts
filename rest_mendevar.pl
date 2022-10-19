@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 #Run MendeVar from REST API
 #Written by Keith Jolley, 2022
+#Version: 20221019
 use strict;
 use warnings;
 use 5.010;
@@ -46,8 +47,9 @@ sub main {
 	}
 	my $response;
 	my $results = extract_results($json_ref);
-	$response->{'bexsero'}  = process_bexsero_outcome($results);
-	$response->{'trumenba'} = process_trumenba_outcome($results);
+	$response->{'processed_matches'} = $results;
+	$response->{'bexsero'}           = process_bexsero_outcome($results);
+	$response->{'trumenba'}          = process_trumenba_outcome($results);
 	say encode_json($response);
 	return;
 }
@@ -65,7 +67,8 @@ sub extract_results {
 			if ( $results->{'exact_matches'}->{ $nuc_loci{$locus} }
 				&& @{ $results->{'exact_matches'}->{ $nuc_loci{$locus} } } )
 			{
-			  ALLELE: foreach my $allele_id ( @{ $results->{'exact_matches'}->{ $nuc_loci{$locus} } } ) {
+			  ALLELE: foreach my $match ( @{ $results->{'exact_matches'}->{ $nuc_loci{$locus} } } ) {
+					my $allele_id = ref $match ? $match->{'allele_id'} : 0;
 					my $flags = $script->{'datastore'}->run_query(
 						'SELECT flag FROM allele_flags WHERE (locus,allele_id)=(?,?)',
 						[ $nuc_loci{$locus}, $allele_id ],
@@ -289,7 +292,7 @@ sub format_match_results {
 			if ( ref $variant ) {
 				$match_variants{ $variant->{'allele_id'} } = 1;
 			} elsif ( $variant eq '0' ) {
-				$match_variants{'0'} = 1
+				$match_variants{'0'} = 1;
 			}
 		}
 		if ( $match_variants{ $component->{'variant'} } ) {
