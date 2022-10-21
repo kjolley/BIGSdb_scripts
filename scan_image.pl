@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #Written by Keith Jolley
 #Generate image file for Zooniverse from results of BIGSdb scan.
-#Version: 20220707
+#Version: 20221021
 use strict;
 use warnings;
 use 5.010;
@@ -32,6 +32,7 @@ GetOptions(
 	'd|database=s'         => \$opts{'d'},
 	'dir=s'                => \$opts{'dir'},
 	'f|flanking=i'         => \$opts{'flanking'},
+	'fasta_flanking=i'     => \$opts{'fasta_flanking'},
 	'help'                 => \$opts{'help'},
 	'i|isolates=s'         => \$opts{'i'},
 	'isolate_list_file=s'  => \$opts{'isolate_list_file'},
@@ -59,8 +60,9 @@ if ( !$opts{'d'} ) {
 	say 'Help: scan_image.pl --help';
 	exit;
 }
-$opts{'flanking'} //= 50;
-$opts{'dir'}      //= '.';
+$opts{'flanking'}       //= 50;
+$opts{'fasta_flanking'} //= 200;
+$opts{'dir'}            //= '.';
 $opts{'dir'} =~ s/\/$//x;
 my $script = BIGSdb::Offline::Script->new(
 	{
@@ -111,6 +113,8 @@ sub main {
 
 	foreach my $isolate_id (@$isolate_list) {
 		foreach my $locus (@$loci) {
+			my $designations = $script->{'datastore'}->get_allele_designations( $isolate_id, $locus );
+			next if @$designations;
 			if ( defined $opts{'max_length'} ) {
 				my $locus_obj = $script->{'datastore'}->get_locus($locus);
 				my $stats     = $locus_obj->get_stats;
@@ -149,11 +153,44 @@ sub main {
 				( my $png_file = $html_file ) =~ s/\.html$/.png/x;
 				my $program = WKHTMLIMAGE_PATH;
 				system "xvfb-run -a $program --format png --quality 50 $html_file $png_file";
+				create_fasta_file( $isolate_id, $locus, $page, $match );
 			}
 			delete_temp_files($locus_prefix);
 		}
 		delete_temp_files($isolate_prefix);
 	}
+}
+
+sub create_fasta_file {
+	my ( $isolate_id, $locus, $page, $match ) = @_;
+	my $seq_features = $page->get_seq_features(
+		{
+			seqbin_id => $match->{'seqbin_id'},
+			reverse   => $match->{'reverse'},
+			start     => $match->{'predicted_start'},
+			end       => $match->{'predicted_end'},
+			flanking  => $opts{'fasta_flanking'}
+		}
+	);
+	my $seq;
+	my $seq_with_flanking;
+	foreach my $feature (@$seq_features) {
+		if ( $feature->{'feature'} eq 'flanking' ) {
+			$seq_with_flanking .= $feature->{'sequence'};
+		}
+		if ( $feature->{'feature'} eq 'allele_seq' ) {
+			$seq = $feature->{'sequence'};
+			$seq_with_flanking .= $feature->{'sequence'};
+		}
+	}
+	my $fasta_file = "$opts{'dir'}/${isolate_id}_$locus.fasta";
+	open( my $fh, '>', $fasta_file ) || die "Cannot open $fasta_file for writing.\n";
+	say $fh ">$isolate_id|$locus";
+	say $fh $seq;
+	say $fh ">$isolate_id|$locus|flanking";
+	say $fh $seq_with_flanking;
+	close $fh;
+	return;
 }
 
 sub create_html_file {
@@ -227,6 +264,9 @@ ${bold}--dir$norm ${under}DIR$norm
   
 ${bold}-f, --flanking$norm ${under}LENGTH$norm
     Length of flanking sequence to include (default: 50bp).  
+    
+${bold}--fasta_flanking ${under}LENGTH$norm
+	Length of flanking sequence to include in FASTA file (default: 200bp).
     
 ${bold}--help$norm
     This help page.
