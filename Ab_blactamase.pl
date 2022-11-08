@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
-#Update A. baumannii database with
+#Update A. baumannii database with betalactamase information.
 #Written by Julia Moreno & Keith Jolley, 2022.
-#Version:20221107
+#Version:20221108
 use strict;
 use warnings;
 use 5.010;
