@@ -129,7 +129,7 @@ sub process_isolate {
 			$mbl_class{ $as->{'class'} }   = 1;
 			if ( defined $as->{'b-lactamase'} ) {
 				$mbl_bl{"$as->{'family'} [$as->{'b-lactamase'}]"} = 1;
-				$bl{"$as->{'b-lactamase'} "}                      = 1;
+				$bl{ $as->{'b-lactamase'} } = 1;
 			}
 		}
 	}
