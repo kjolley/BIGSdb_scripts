@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #Written by Keith Jolley
 #Generate image file for Zooniverse from results of BIGSdb scan.
-#Version: 20221021
+#Version: 20230206
 use strict;
 use warnings;
 use 5.010;
@@ -19,6 +19,7 @@ use BIGSdb::ExtractedSequencePage;
 use BIGSdb::Constants qw(LOG_TO_SCREEN);
 use constant ALIGN_WIDTH => 100;
 use CGI;
+use Digest::MD5;
 use Getopt::Long qw(:config no_ignore_case);
 use Term::Cap;
 
@@ -110,6 +111,7 @@ sub main {
 		contigManager => $scan->{'contigManager'},
 		datastore     => $scan->{'datastore'}
 	);
+	my %used;
 
 	foreach my $isolate_id (@$isolate_list) {
 		foreach my $locus (@$loci) {
@@ -148,17 +150,32 @@ sub main {
 						next MATCH if $scan->is_complete_gene($seq) && !$opts{'cds'};
 					}
 				}
-				my $html = get_html( $page, $match );
+				my $seq_ref = get_extracted_sequence($seq_features);
+				my $seq_hash  = Digest::MD5::md5_hex($$seq_ref);
+				next if $used{$seq_hash};
+				my $html      = get_html( $page, $match );
 				my $html_file = create_html_file( $isolate_id, $locus, $html );
 				( my $png_file = $html_file ) =~ s/\.html$/.png/x;
 				my $program = WKHTMLIMAGE_PATH;
 				system "xvfb-run -a $program --format png --quality 50 $html_file $png_file";
 				create_fasta_file( $isolate_id, $locus, $page, $match );
+				$used{$seq_hash} = 1;
 			}
 			delete_temp_files($locus_prefix);
 		}
 		delete_temp_files($isolate_prefix);
 	}
+}
+
+sub get_extracted_sequence {
+	my ($seq_features) = @_;
+	my $seq;
+	foreach my $feature (@$seq_features) {
+		if ( $feature->{'feature'} eq 'allele_seq' ) {
+			$seq = $feature->{'sequence'};
+		}
+	}
+	return \$seq;
 }
 
 sub create_fasta_file {
@@ -240,7 +257,7 @@ sub show_help {
 	my $termios = POSIX::Termios->new;
 	$termios->getattr;
 	my $ospeed = $termios->getospeed;
-	my $t = Tgetent Term::Cap { TERM => undef, OSPEED => $ospeed };
+	my $t      = Tgetent Term::Cap { TERM => undef, OSPEED => $ospeed };
 	my ( $norm, $bold, $under ) = map { $t->Tputs( $_, 1 ) } qw(me md us);
 	say << "HELP";
 ${bold}NAME$norm
