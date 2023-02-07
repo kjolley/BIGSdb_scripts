@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 #Generate trees from rMLST profile data.
 #Written by Keith Jolley, 2017-2021
-#Version 20210610
+#Version 20230207
 use strict;
 use warnings;
 use 5.010;
@@ -31,7 +31,7 @@ use constant RANKS => qw(genus family order class phylum);
 
 #Direct all library logging calls to screen
 my $log_conf =
-    qq(log4perl.category.BIGSdb.Script        = INFO, Screen\n)
+	qq(log4perl.category.BIGSdb.Script        = INFO, Screen\n)
   . qq(log4perl.category.BIGSdb.Dataconnector = WARN, Screen\n)
   . qq(log4perl.category.BIGSdb.Datastore     = WARN, Screen\n)
   . qq(log4perl.appender.Screen               = Log::Log4perl::Appender::Screen\n)
@@ -118,15 +118,15 @@ sub list_rsts {
 
 sub get_rsts {
 	my ( $rank, $taxon ) = @_;
-	my $data = get_taxonomy( $rank, $taxon );
+	my $data    = get_taxonomy( $rank, $taxon );
 	my @species = sort keys %$data;
 	$seqdef_db->reconnect;    #The connection can be dropped due to network issues in long-running processes
-	my $temp_table = $seqdef_db->{'datastore'}->create_temp_list_table_from_array( 'text', \@species );
+	my $temp_table   = $seqdef_db->{'datastore'}->create_temp_list_table_from_array( 'text', \@species );
 	my $scheme_cache = 'mv_scheme_' . RMLST_SCHEME_ID;
 	my $list =
 	  $seqdef_db->{'datastore'}->run_query(
 		"SELECT rST FROM $scheme_cache c JOIN $temp_table l ON c.species=l.value ORDER BY CAST(c.rST AS integer)",
-		undef, { fetch => 'col_arrayref' } );
+		undef, { fetch => 'col_arrayref', cache => 'get_rsts' } );
 	$seqdef_db->{'db'}->do("DROP TABLE $temp_table");
 	return $list;
 }
@@ -135,8 +135,8 @@ sub check_valid_rank {
 	if ( $opts{'rank'} ) {
 		my %defined_ranks = map { $_ => 1 } ( RANKS, 'domain', 'species' );
 		die "$opts{'rank'} is not a valid rank.\n" if !$defined_ranks{ $opts{'rank'} };
-		$opts{'taxon'} //= 'Bacteria' if $opts{'rank'} eq 'domain';
-		die "No taxon provided.\n" if !$opts{'taxon'};
+		$opts{'taxon'} //= 'Bacteria'              if $opts{'rank'} eq 'domain';
+		die "No taxon provided.\n"                 if !$opts{'taxon'};
 	}
 	return;
 }
@@ -152,7 +152,8 @@ sub get_taxonomy {
 	}
 	$isolate_db->reconnect;    #The connection can be dropped due to network issues in long-running processes
 	my $data =
-	  $isolate_db->{'datastore'}->run_query( $qry, undef, { fetch => 'all_arrayref', slice => {} } );
+	  $isolate_db->{'datastore'}
+	  ->run_query( $qry, undef, { fetch => 'all_arrayref', slice => {}, cache => 'get_taxonomy' } );
 	$isolate_db->{'db'}->commit;    #Prevent idle in transaction locks
 	my $taxonomy = {};
 	map { $taxonomy->{ $_->{'field_value'} }->{ $_->{'attribute'} } = $_->{'value'} } @$data;
@@ -191,7 +192,7 @@ sub get_rst_counts {
 		my $rst_data =
 		  $seqdef_db->{'datastore'}
 		  ->run_query( "SELECT species,count(*) AS count FROM $table WHERE species IS NOT NULL GROUP BY species",
-			undef, { fetch => 'all_arrayref', slice => {} } );
+			undef, { fetch => 'all_arrayref', slice => {}, cache => 'get_rst_counts' } );
 		$seqdef_db->{'db'}->commit;
 		foreach my $values (@$rst_data) {
 			foreach my $rank ( RANKS, 'species' ) {
@@ -510,9 +511,9 @@ sub make_tree {
 	my $fasta_file = BIGSdb::Utils::xmfa2fasta($xmfa_file);
 	unlink $xmfa_file;
 	my $output_tree_file = TMP_DIR . "/$job_id.tree";
-	my $threads = $opts{'threads'} // 1;
+	my $threads          = $opts{'threads'} // 1;
 	my $cmd =
-	    RAPIDNJ_PATH
+		RAPIDNJ_PATH
 	  . " $fasta_file --input-format fa --cores $threads -x $output_tree_file "
 	  . '--alignment-type d > /dev/null 2>&1';
 	system $cmd;
@@ -572,7 +573,7 @@ sub show_help {
 	my $termios = POSIX::Termios->new;
 	$termios->getattr;
 	my $ospeed = $termios->getospeed;
-	my $t = Tgetent Term::Cap { TERM => undef, OSPEED => $ospeed };
+	my $t      = Tgetent Term::Cap { TERM => undef, OSPEED => $ospeed };
 	my ( $norm, $bold, $under ) = map { $t->Tputs( $_, 1 ) } qw(me md us);
 	say << "HELP";
 ${bold}NAME$norm
