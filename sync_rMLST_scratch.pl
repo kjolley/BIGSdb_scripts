@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 #Synchronise rMLST scratch database users with registered users
-#Written by Keith Jolley, 2020.
+#Written by Keith Jolley, 2020-2022.
+#Version 20220421
 use strict;
 use warnings;
 use 5.010;
@@ -110,7 +111,12 @@ sub delete_users {
 	foreach my $user_name (@$scratch_usernames) {
 		next if $public{$user_name};
 		say qq(Deleting user $user_name.);
-		eval { $scratch->{'db'}->do( 'DELETE FROM users WHERE user_name=?', undef, $user_name ); };
+		eval {
+			$scratch->{'db'}
+			  ->do( 'DELETE FROM projects WHERE curator IN (SELECT id FROM users WHERE user_name=?)',
+				undef, $user_name );
+			$scratch->{'db'}->do( 'DELETE FROM users WHERE user_name=?', undef, $user_name );
+		};
 		if ($@) {
 			$scratch->{'db'}->rollback;
 			die qq($@\n);

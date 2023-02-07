@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #Generate trees from rMLST profile data.
-#Written by Keith Jolley, 2017-2021
+#Written by Keith Jolley, 2017-2023
 #Version 20230207
 use strict;
 use warnings;
@@ -14,7 +14,8 @@ use constant {
 	SEQDEF_DB        => 'pubmlst_rmlst_seqdef',
 	RMLST_SCHEME_ID  => 1,
 	TMP_DIR          => '/var/tmp',
-	RAPIDNJ_PATH     => '/usr/local/bin/rapidnj'
+	RAPIDNJ_PATH     => '/usr/local/bin/rapidnj',
+	MAX_TREE_SIZE    => 10_000
 };
 #######End Local configuration###############################
 use lib (LIB_DIR);
@@ -48,6 +49,7 @@ GetOptions(
 	'hyperlinks'        => \$opts{'hyperlinks'},
 	'include_top_level' => \$opts{'include_top_level'},
 	'isolate_count'     => \$opts{'isolate_count'},
+	'max_tree_size=i'   => \$opts{'max_tree_size'},
 	'method=s'          => \$opts{'method'},
 	'new_only'          => \$opts{'new_only'},
 	'public'            => \$opts{'public'},
@@ -82,6 +84,7 @@ my $isolate_db = BIGSdb::Offline::Script->new(
 		options          => { always_run => 1 }
 	}
 );
+$opts{'max_tree_size'} = MAX_TREE_SIZE;
 $opts{'dir'}   //= '/var/tmp/taxonomy';
 $opts{'depth'} //= 7;
 $opts{'depth'}++;
@@ -126,7 +129,7 @@ sub get_rsts {
 	my $list =
 	  $seqdef_db->{'datastore'}->run_query(
 		"SELECT rST FROM $scheme_cache c JOIN $temp_table l ON c.species=l.value ORDER BY CAST(c.rST AS integer)",
-		undef, { fetch => 'col_arrayref', cache => 'get_rsts' } );
+		undef, { fetch => 'col_arrayref' } );
 	$seqdef_db->{'db'}->do("DROP TABLE $temp_table");
 	return $list;
 }
@@ -150,10 +153,8 @@ sub get_taxonomy {
 	if ( $opts{'public'} ) {
 		$qry .= q( AND field_value IN (SELECT species FROM public));
 	}
-	$isolate_db->reconnect;    #The connection can be dropped due to network issues in long-running processes
-	my $data =
-	  $isolate_db->{'datastore'}
-	  ->run_query( $qry, undef, { fetch => 'all_arrayref', slice => {}, cache => 'get_taxonomy' } );
+	$isolate_db->reconnect;         #The connection can be dropped due to network issues in long-running processes
+	my $data = $isolate_db->{'datastore'}->run_query( $qry, undef, { fetch => 'all_arrayref', slice => {} } );
 	$isolate_db->{'db'}->commit;    #Prevent idle in transaction locks
 	my $taxonomy = {};
 	map { $taxonomy->{ $_->{'field_value'} }->{ $_->{'attribute'} } = $_->{'value'} } @$data;
@@ -192,7 +193,7 @@ sub get_rst_counts {
 		my $rst_data =
 		  $seqdef_db->{'datastore'}
 		  ->run_query( "SELECT species,count(*) AS count FROM $table WHERE species IS NOT NULL GROUP BY species",
-			undef, { fetch => 'all_arrayref', slice => {}, cache => 'get_rst_counts' } );
+			undef, { fetch => 'all_arrayref', slice => {} } );
 		$seqdef_db->{'db'}->commit;
 		foreach my $values (@$rst_data) {
 			foreach my $rank ( RANKS, 'species' ) {
@@ -438,8 +439,12 @@ sub make_tree {
 		say 'skipping.' if !$opts{'quiet'};
 		return;
 	}
-	my $start_time   = time;
-	my $rsts         = get_rsts( $rank, $taxon );
+	my $start_time = time;
+	my $rsts       = get_rsts( $rank, $taxon );
+	if ( @$rsts > $opts{'max_tree_size'} ) {
+		say 'skipping (too many rSTs).' if !$opts{'quiet'};
+		return;
+	}
 	my $loci         = $seqdef_db->{'datastore'}->get_scheme_loci(RMLST_SCHEME_ID);
 	my $scheme_table = 'mv_scheme_' . RMLST_SCHEME_ID;
 	my $start        = 1;
@@ -605,6 +610,9 @@ ${bold}--include_top_level$norm
     
 ${bold}--isolate_count$norm
     Include isolate count in output.
+    
+${bold}--max_tree_size$norm [${under}number of nodes$norm]
+	Maximum number of nodes in a tree.
     
 ${bold}--method$norm [${under}method$norm]
     hierarchy: Output hierarchical list - combine with --format, --rank and 
