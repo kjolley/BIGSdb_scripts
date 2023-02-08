@@ -15,7 +15,7 @@ use constant {
 	RMLST_SCHEME_ID  => 1,
 	TMP_DIR          => '/var/tmp',
 	RAPIDNJ_PATH     => '/usr/local/bin/rapidnj',
-	MAX_TREE_SIZE    => 10_000
+	MAX_TREE_SIZE    => 1_000
 };
 #######End Local configuration###############################
 use lib (LIB_DIR);
@@ -95,7 +95,12 @@ my $methods = {
 	trees         => \&trees
 };
 my %valid_method = map { $_ => 1 } keys %$methods;
-die "Invalid method specified.\n" if !$valid_method{ $opts{'method'} };
+
+if ( !$valid_method{ $opts{'method'} } ) {
+	undef $seqdef_db;
+	undef $isolate_db;
+	die "Invalid method specified.\n";
+}
 $methods->{ $opts{'method'} }->();
 undef $seqdef_db;
 undef $isolate_db;
