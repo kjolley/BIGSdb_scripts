@@ -198,7 +198,7 @@ sub get_rst_counts {
 		my $rst_data =
 		  $seqdef_db->{'datastore'}
 		  ->run_query( "SELECT species,count(*) AS count FROM $table WHERE species IS NOT NULL GROUP BY species",
-			undef, { fetch => 'all_arrayref', slice => {} } );
+			undef, { fetch => 'all_arrayref', slice => {}, cache => 'get_rst_counts' } );
 		$seqdef_db->{'db'}->commit;
 		foreach my $values (@$rst_data) {
 			foreach my $rank ( RANKS, 'species' ) {
@@ -219,7 +219,7 @@ sub get_isolate_counts {
 			"SELECT species,count(*) AS count FROM $isolate_db->{'system'}->{'view'} "
 			  . 'WHERE species IS NOT NULL GROUP BY species',
 			undef,
-			{ fetch => 'all_arrayref', slice => {} }
+			{ fetch => 'all_arrayref', slice => {}, cache => 'get_isolate_counts' }
 		);
 		$isolate_db->{'db'}->commit;
 		foreach my $values (@$rst_data) {
