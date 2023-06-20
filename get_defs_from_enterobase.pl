@@ -1,6 +1,6 @@
 #!/usr/bin/perl 
 #Written by Keith Jolley
-#Copyright (c) 2016-2018, University of Oxford
+#Copyright (c) 2016-2023, University of Oxford
 #E-mail: keith.jolley@zoo.ox.ac.uk
 #
 #This program is free software: you can redistribute it and/or modify
@@ -37,7 +37,7 @@ use constant {
 	DBASE_CONFIG_DIR => '/etc/bigsdb/dbases',
 };
 my $SERVER_ADDRESS = 'https://enterobase.warwick.ac.uk/api/v2.0';
-my $TOKEN_FILE     = "$ENV{'HOME'}/.enterobase_token";
+my $TOKEN_FILE     = "$ENV{'HOME'}/.enterobase";
 #######End Local configuration################################
 use lib (LIB_DIR);
 use BIGSdb::Offline::Script;
@@ -56,8 +56,8 @@ GetOptions(
 	'locus_regex=s'         => \$opts{'locus_regex'},
 	'h|help'                => \$opts{'h'},
 	'missing'               => \$opts{'missing'},
-	'max_locus=s' => \$opts{'max_locus'},
-	'min_locus=s' => \$opts{'min_locus'},
+	'max_locus=s'           => \$opts{'max_locus'},
+	'min_locus=s'           => \$opts{'min_locus'},
 	'p|update_profiles'     => \$opts{'p'},
 	'r|route=s'             => \$opts{'r'},
 	'n|new_loci'            => \$opts{'n'},
@@ -232,10 +232,10 @@ sub update_alleles {
 		my $locus_name = $mapped_loci->{$locus} // $locus;
 		$complete++;
 		my $percent = BIGSdb::Utils::decimal_place( ( $complete / @$loci ) * 100, 1 );
-		next LOCUS if $opts{'locus_regex'} && $locus !~ /$opts{'locus_regex'}/x;
+		next LOCUS if $opts{'locus_regex'}         && $locus !~ /$opts{'locus_regex'}/x;
 		next LOCUS if $opts{'last_updated_before'} && $recently_updated{$locus_name};
-		next LOCUS if $opts{'min_locus'} && $locus_name lt $opts{'min_locus'};
-		next LOCUS if $opts{'max_locus'} && $locus_name gt $opts{'max_locus'};
+		next LOCUS if $opts{'min_locus'}           && $locus_name lt $opts{'min_locus'};
+		next LOCUS if $opts{'max_locus'}           && $locus_name gt $opts{'max_locus'};
 		if ( !$defined{$locus_name} ) {
 			say "Locus $locus_name has not been defined.";
 			next LOCUS;
@@ -244,9 +244,9 @@ sub update_alleles {
 		  $script->{'datastore'}->run_query( 'SELECT allele_id,sequence FROM sequences WHERE locus=?',
 			$locus_name, { fetch => 'all_arrayref', cache => 'get_all_alleles' } );
 		next if @$existing_alleles && $opts{'n'};
-		my %existing = map { $_->[0] => $_->[1] } @$existing_alleles;
+		my %existing      = map { $_->[0]                         => $_->[1] } @$existing_alleles;
 		my %existing_seqs = map { Digest::MD5::md5_hex( $_->[1] ) => $_->[0] } @$existing_alleles;
-		my $url = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/alleles?locus=$locus";
+		my $url           = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/alleles?locus=$locus";
 		$url .= "&limit=$opts{'limit'}"     if $opts{'limit'};
 		$url .= "&reldate=$opts{'reldate'}" if $opts{'reldate'};
 		my %already_received;
@@ -566,14 +566,30 @@ sub get_api_token {
 	open( my $fh, '<:raw', $TOKEN_FILE ) || die "Cannot open $TOKEN_FILE for reading.\n";
 	my $contents = do { local $/ = undef; <$fh> };
 	close $fh;
-	return $contents;
+	if ( $contents =~ /^([\w\d_-]+)\|([\w\d_-]+)$/x ) {
+		my ( $username, $password ) = ( $1, $2 );
+		my $url  = "$SERVER_ADDRESS/login?username=$username&password=$password";
+		my $resp = $ua->get($url);
+		if ( $resp->is_success ) {
+			my $data = decode_json( $resp->decoded_content );
+			return $data->{'api_token'};
+		} else {
+			say $url;
+			say $resp->status_line;
+			say $resp->decoded_content;
+			exit;
+		}
+	} else {
+		say "Invalid password file. Contents should be 'username|password'.";
+	}
+	return;
 }
 
 sub show_help {
 	my $termios = POSIX::Termios->new;
 	$termios->getattr;
 	my $ospeed = $termios->getospeed;
-	my $t = Tgetent Term::Cap { TERM => undef, OSPEED => $ospeed };
+	my $t      = Tgetent Term::Cap { TERM => undef, OSPEED => $ospeed };
 	my ( $norm, $bold, $under ) = map { $t->Tputs( $_, 1 ) } qw/me md us/;
 	say << "HELP";
 ${bold}NAME$norm
