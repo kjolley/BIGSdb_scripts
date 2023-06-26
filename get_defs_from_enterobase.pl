@@ -62,6 +62,7 @@ GetOptions(
 	'r|route=s'             => \$opts{'r'},
 	'n|new_loci'            => \$opts{'n'},
 	'm|allow_missing'       => \$opts{'allow_missing'},
+	'no_mapping'            => \$opts{'no_mapping'},
 	'no_errors'             => \$opts{'no_errors'},
 	'reldate=i'             => \$opts{'reldate'},
 	's|scheme=s'            => \$opts{'s'},
@@ -167,8 +168,8 @@ sub check_alleles {
 				$max_length = $length if $length > $max_length;
 			}
 			usleep(500_000);    #Rate-limiting
-			if ( @$alleles && $data->{'paging'}->{'next'} ) {
-				$url = $data->{'paging'}->{'next'};
+			if ( @$alleles && $data->{'links'}->{'paging'}->{'next'} ) {
+				$url = $data->{'links'}->{'paging'}->{'next'};
 			} else {
 				last PAGE;
 			}
@@ -186,6 +187,7 @@ sub check_alleles {
 }
 
 sub get_mapped_loci {
+	return {} if $opts{'no_mapping'};
 	if ( $opts{'e'} eq 'yersinia' ) {
 		return {
 			adk  => 'Yersinia_pseudotuberculosis_MLST_adk',
@@ -324,8 +326,8 @@ sub update_alleles {
 				}
 			}
 			usleep(500_000);    #Rate-limiting
-			if ( @$alleles && $data->{'paging'}->{'next'} ) {
-				$url = $data->{'paging'}->{'next'};
+			if ( @$alleles && $data->{'links'}->{'paging'}->{'next'} ) {
+				$url = $data->{'links'}->{'paging'}->{'next'};
 			} else {
 				$script->{'db'}->commit if $opts{'commit'};
 				last PAGE;
@@ -515,7 +517,8 @@ sub check_options {
 sub get_loci {
 	die "No scheme selected.\n" if !$opts{'s'};
 	check_options(qw(e s));
-	my $url         = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/loci?limit=5000";
+	my $url = "$SERVER_ADDRESS/$opts{'e'}/$opts{'s'}/loci";
+	$url .= "?limit=$opts{'limit'}" if $opts{'limit'};
 	my $locus_names = [];
 	while (1) {
 		say $url if $opts{'debug'};
@@ -653,6 +656,9 @@ ${bold}--missing$norm
     
 ${bold}-n, --new_loci$norm
     Only download new loci (those without any existing alleles defined).
+    
+${bold}--no_mapping$norm
+    Don't map locus names.
     
 ${bold}--no_errors$norm
     Silently ignore insertion errors caused by profiles being defined on
