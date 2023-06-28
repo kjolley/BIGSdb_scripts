@@ -374,7 +374,7 @@ sub update_profiles {
 			$resp = $ua->get($url);
 			if ( !$resp->is_success ) {
 				if ( $attempt < 10 ) {
-					say $url;
+					say $url if $opts{'debug'};
 					say $resp->status_line;
 					say $resp->decoded_content;
 					my $delay = $attempt * 10;
