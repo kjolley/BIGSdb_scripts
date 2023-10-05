@@ -6,14 +6,16 @@
    <dl class="data"><dt>predicted genotype</dt><dd>NT</dd></dl>
 [% ELSE %]
    <dl class="data">
-   [% fields = ['predicted_serotype','attributes','genes_identified'] %]
+   [% fields = ['predicted_serotype','attributes','genes_identified','region_I_genes','region_II_genes','region_III_genes','IS1016_hits'] %]
    [% FOREACH key IN fields %]
-      <dt>[% key.replace('_',' ') %]</dt>
-      [% IF hicap.results.$key.length > 0 %]
-      	 <dd>[% hicap.results.$key %]</dd>
-      [% ELSE %]
-	 <dd>-</dd>
-      [% END %]
+   	  [% IF key.defined %]
+	      <dt>[% key.replace('_',' ') %]</dt>
+	      [% IF hicap.results.$key.length > 0 %]
+	      	 <dd>[% hicap.results.$key %]</dd>
+	      [% ELSE %]
+		 <dd>-</dd>
+	      [% END %]
+	   [% END %]
    [% END %]
    </dl>
 [% END %]
