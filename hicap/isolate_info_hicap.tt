@@ -23,7 +23,7 @@ $(function () {
   let svg_height = $("svg#hicap").height();
   let margin;
   if (svg_height > 200){
-    margin = Number(svg_height * 0.10);
+    margin = Number(svg_height * 0.08);
     $("svg#hicap").css("margin-top", "-" + margin + "px");
     $("svg#hicap").css("margin-bottom", "-" + margin + "px");
   }
