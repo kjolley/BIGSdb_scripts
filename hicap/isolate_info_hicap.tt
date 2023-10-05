@@ -8,21 +8,30 @@
    <dl class="data">
    [% fields = ['predicted_serotype','attributes','genes_identified','region_I_genes','region_II_genes','region_III_genes','IS1016_hits'] %]
    [% FOREACH key IN fields %]
-   	  [% IF key.defined %]
-	      <dt>[% key.replace('_',' ') %]</dt>
-	      [% IF hicap.results.$key.length > 0 %]
-	      	 <dd>[% hicap.results.$key %]</dd>
-	      [% ELSE %]
-		 <dd>-</dd>
-	      [% END %]
-	   [% END %]
+      <dt>[% key.replace('_',' ') %]</dt>
+      [% IF hicap.results.$key.length > 0 %]
+      	 <dd>[% hicap.results.$key %]</dd>
+      [% ELSE %]
+	 <dd>-</dd>
+      [% END %]
    [% END %]
    </dl>
 [% END %]
 [% IF hicap.results.svg %]
-<div>
+<script>
+$(function () {
+  let svg_height = $("svg#hicap").height();
+  let margin;
+  if (svg_height > 200){
+    margin = Number(svg_height * 0.10);
+    $("svg#hicap").css("margin-top", "-" + margin + "px");
+    $("svg#hicap").css("margin-bottom", "-" + margin + "px");
+  }
+});
+</script>
 <style>
-svg#hicap {min-width:1200px;width:100%;height:auto;margin-top:-35px;margin-bottom:-20px}
+svg#hicap {min-width:1200px;width:100%;height:auto}
+
 </style>
 <div class="scrollable">
 [% hicap.results.svg.replace('ns0.','').replace('<svg','<svg id="hicap"') %]
