@@ -1,0 +1,31 @@
+[% # Template file for outputting formatted hicap analysis in the isolate information page. %]
+[% IF hicap %]
+<h3>hicap - <i>in silico</i> serotyping of the <i>Haemophilus influenzae</i> capsule locus</h3>
+[% IF hicap.results.predicted_serotype == 'NT' %]
+   <p>No hits to any cap locus gene found.</p>
+   <dl class="data"><dt>predicted genotype</dt><dd>NT</dd></dl>
+[% ELSE %]
+   <dl class="data">
+   [% fields = ['predicted_serotype','attributes','genes_identified'] %]
+   [% FOREACH key IN fields %]
+      <dt>[% key.replace('_',' ') %]</dt>
+      [% IF hicap.results.$key.length > 0 %]
+      	 <dd>[% hicap.results.$key %]</dd>
+      [% ELSE %]
+	 <dd>-</dd>
+      [% END %]
+   [% END %]
+   </dl>
+[% END %]
+[% IF hicap.results.svg %]
+<div>
+<style>
+svg#hicap {min-width:1200px;width:100%;height:auto;margin-top:-35px;margin-bottom:-20px}
+</style>
+<div class="scrollable">
+[% hicap.results.svg.replace('ns0.','').replace('<svg','<svg id="hicap"') %]
+</div>
+[% END %]
+
+<p style="font-size:0.8em"><em>Analysis performed: [% hicap.datestamp %]</em>; [% hicap.results.version %]. Citation: <a href="https://pubmed.ncbi.nlm.nih.gov/30944197/">Watts SC & Holt KE (2019) <i>J Clin Microbiol</i> 6:e00190-19</a>.</p>
+[% END %]
