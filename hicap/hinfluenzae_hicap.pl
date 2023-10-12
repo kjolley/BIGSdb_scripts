@@ -19,7 +19,7 @@
 #You should have received a copy of the GNU General Public License
 #along with this software.  If not, see <http://www.gnu.org/licenses/>.
 #
-#Version: 20231010
+#Version: 20231012
 use strict;
 use warnings;
 use 5.010;
@@ -29,7 +29,7 @@ use constant {
 	LIB_DIR          => '/usr/local/lib',
 	DBASE_CONFIG_DIR => '/etc/bigsdb/dbases',
 	DBASE            => 'pubmlst_hinfluenzae_isolates',
-	ENV_SETUP        => 'source /home/bigsdb/miniconda3/bin/activate hicap',
+	ENV_SETUP        => '. /home/bigsdb/miniconda3/bin/activate hicap',
 	SCRIPT_DIR       => '/home/bigsdb/miniconda3/envs/hicap/bin'
 };
 #######End Local configuration#############################################
@@ -89,20 +89,19 @@ sub main {
 		my $fasta = create_fasta_file( $prefix, $isolate_id );
 		my $version;
 		eval {
-			system (ENV_SETUP);
-			system( SCRIPT_DIR
-				  . "/hicap --query_fp $fasta --output_dir $script->{'config'}->{'secure_tmp_dir'} $quiet" );
+			system( ENV_SETUP . ';' . SCRIPT_DIR
+				  . "/hicap --query_fp $fasta --output_dir $script->{'config'}->{'secure_tmp_dir'} $quiet"
+			);
 			my $version_cmd = SCRIPT_DIR . '/hicap --version';
 			$version = `$version_cmd`;
 			chomp $version;
 		};
 		my $tsv = "$script->{'config'}->{'secure_tmp_dir'}/${prefix}_$isolate_id.tsv";
 		my $data;
-		
 		if ( -e $tsv ) {
 			$data = read_tsv($tsv);
 		} else {
-			$data = {predicted_serotype => 'NT'};
+			$data = { predicted_serotype => 'NT' };
 		}
 		$data->{'version'} = $version;
 		my $svg = "$script->{'config'}->{'secure_tmp_dir'}/${prefix}_$isolate_id.svg";
@@ -112,10 +111,10 @@ sub main {
 		}
 		$script->delete_temp_files("$script->{'config'}->{'secure_tmp_dir'}/$prefix*");
 		eval {
-			$script->{'db'}->do('INSERT INTO analysis_results (name,isolate_id,datestamp,results) VALUES (?,?,?,?)',undef,'hicap',$isolate_id,
-			'now',encode_json($data));
+			$script->{'db'}->do( 'INSERT INTO analysis_results (name,isolate_id,datestamp,results) VALUES (?,?,?,?)',
+				undef, 'hicap', $isolate_id, 'now', encode_json($data) );
 		};
-		if ($@){
+		if ($@) {
 			$logger->error($@);
 			$script->{'db'}->rollback;
 		} else {
