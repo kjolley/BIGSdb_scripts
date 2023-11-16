@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 #Run MendeVar from REST API
-#Written by Keith Jolley, 2022
-#Version: 20221019
+#Written by Keith Jolley, 2022-2023
+#Version: 20231116
 use strict;
 use warnings;
 use 5.010;
@@ -37,7 +37,7 @@ undef $script;
 
 sub main {
 	my $json_results = $ARGV[0];
-	die "No results file passed.\n" if !$json_results;
+	die "No results file passed.\n"                    if !$json_results;
 	die "Results file $json_results does not exist.\n" if !-e $json_results;
 	my $json_ref = BIGSdb::Utils::slurp($json_results);
 	my $prefix   = BIGSdb::Utils::get_random();
@@ -69,7 +69,7 @@ sub extract_results {
 			{
 			  ALLELE: foreach my $match ( @{ $results->{'exact_matches'}->{ $nuc_loci{$locus} } } ) {
 					my $allele_id = ref $match ? $match->{'allele_id'} : 0;
-					my $flags = $script->{'datastore'}->run_query(
+					my $flags     = $script->{'datastore'}->run_query(
 						'SELECT flag FROM allele_flags WHERE (locus,allele_id)=(?,?)',
 						[ $nuc_loci{$locus}, $allele_id ],
 						{ fetch => 'col_arrayref' }
@@ -115,7 +115,7 @@ sub process_bexsero_outcome {
 	if ( !contains_bexsero_antigens($results) ) {
 		return { result => 'none', notes => 'none of the vaccine antigens found' };
 	}
-	local $" = q(</li><li>);
+	local $" = q(; );
 	my $has_exact_bexsero_match = has_exact_bexsero_match($results);
 	if ( $has_exact_bexsero_match->{'result'} ) {
 		return { result => 'exact match', notes => qq(@{$has_exact_bexsero_match->{'notes'}}) };
@@ -139,7 +139,7 @@ sub process_trumenba_outcome {
 	if ( !contains_trumenba_antigens($results) ) {
 		return { result => 'none', notes => 'fHbp_peptide is missing' };
 	}
-	local $" = q(</li><li>);
+	local $" = q(; );
 	my $has_exact_trumenba_match = has_exact_trumenba_match($results);
 	if ( $has_exact_trumenba_match->{'result'} ) {
 		return { result => 'exact match', notes => qq(@{$has_exact_trumenba_match->{'notes'}}) };
@@ -198,7 +198,7 @@ sub no_reactivity_with_bexsero {
 
 	#FHbp
 	my $components = MenVaccine::get_fhbp_no_reactivity_with_bexsero();
-	my $matched = is_not_cross_reactive( $results, $components, $notes );
+	my $matched    = is_not_cross_reactive( $results, $components, $notes );
 	if ( ( $results->{'fHbp_peptide'}->{'variants'}->[0] // '0' ) eq '0' ) {
 		$matched = 1;
 		push @$notes, qq(fHbp_peptide is missing);
@@ -216,7 +216,7 @@ sub no_reactivity_with_bexsero {
 
 	#NadA
 	$components = MenVaccine::get_nadA_no_reactivity_with_bexsero();
-	$matched = is_not_cross_reactive( $results, $components, $notes );
+	$matched    = is_not_cross_reactive( $results, $components, $notes );
 	if ( ( $results->{'NadA_peptide'}->{'variants'}->[0] // '0' ) eq '0' ) {
 		$matched = 1;
 		push @$notes, qq(NadA_peptide is missing);
@@ -242,11 +242,15 @@ sub is_not_cross_reactive {
 		  ref $results->{ $component->{'locus'} }->{'variants'}
 		  ? $results->{ $component->{'locus'} }->{'variants'}
 		  : [];
-		my %variants = map { $_ => 1 } @$variants;
-		if ( $variants{ $component->{'variant'} } ) {
+		my %variant_found;
+		foreach my $variant (@$variants) {
+			next if $variant eq '0';
+			$variant_found{ $variant->{'allele_id'} } = 1;
+		}
+		if ( $variant_found{ $component->{'variant'} } ) {
 			$matched = 1;
 			my @note_evidence;
-			my @evidence_list = uniq( sort { $a cmp $b } values %{ $component->{'references'} } );
+			my @evidence_list  = uniq( sort { $a cmp $b } values %{ $component->{'references'} } );
 			my $evidence_count = 0;
 			foreach my $evidence (@evidence_list) {
 				$evidence_count++;
@@ -280,7 +284,7 @@ sub is_not_cross_reactive {
 sub format_match_results {
 	my ( $results, $components, $reason ) = @_;
 	my $result;
-	my $notes = [];
+	my $notes  = [];
 	my %assays = map { $_ => 1 } qw(MATS SBA MEASURE);
 	foreach my $component (@$components) {
 		my $match_variants =
@@ -298,7 +302,7 @@ sub format_match_results {
 		if ( $match_variants{ $component->{'variant'} } ) {
 			$result = 1;
 			my @note_evidence;
-			my @evidence_list = uniq( sort { $a cmp $b } values %{ $component->{'references'} } );
+			my @evidence_list  = uniq( sort { $a cmp $b } values %{ $component->{'references'} } );
 			my $evidence_count = 0;
 			foreach my $evidence (@evidence_list) {
 				$evidence_count++;
