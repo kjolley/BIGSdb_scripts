@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 #Run MendeVar from REST API
 #Written by Keith Jolley, 2022-2023
-#Version: 20231116
+#Version: 20231207
 use strict;
 use warnings;
 use 5.010;
@@ -92,6 +92,7 @@ sub extract_results {
 			}
 			if ( $results->{'partial_matches'}->{ $nuc_loci{$locus} }->{'allele'} ) {
 				my $match = $results->{'partial_matches'}->{ $nuc_loci{$locus} };
+				
 				if ( ( 100 * $match->{'alignment'} / $match->{'length'} ) < MIN_ALIGNMENT
 					|| $match->{'identity'} < MIN_IDENTITY )
 				{
@@ -244,7 +245,7 @@ sub is_not_cross_reactive {
 		  : [];
 		my %variant_found;
 		foreach my $variant (@$variants) {
-			next if $variant eq '0';
+			next if $variant eq '0' || $variant eq 'possible new variant';
 			$variant_found{ $variant->{'allele_id'} } = 1;
 		}
 		if ( $variant_found{ $component->{'variant'} } ) {
