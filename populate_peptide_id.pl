@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #Populate peptide_id field in DNA locus corresponding to a peptide locus.
 #Written by Keith Jolley 2024
-#Version 20240513
+#Version 20240514
 use strict;
 use warnings;
 use 5.010;
@@ -128,9 +128,16 @@ sub check {
 		} else {
 			if ( !$translate->{'error'} ) {
 				my $peptide_id = $script->{'datastore'}->run_query(
-					"SELECT allele_id FROM sequences WHERE (locus,sequence)=(?,?)",
+					'SELECT allele_id FROM sequences WHERE (locus,sequence)=(?,?)',
 					[ $opts{'protein_locus'}, $translate->{'peptide'} ]
 				);
+				my $flags = $script->{'datastore'}->run_query(
+					'SELECT flag FROM allele_flags WHERE (locus,allele_id)=(?,?)',
+					[ $opts{'nucleotide_locus'}, $allele->{'allele_id'} ],
+					{ fetch => 'col_arrayref' }
+				);
+				my %flags = map { $_ => 1 } @$flags;
+				next if $flags{'frameshift'};
 				print "$id: No peptide_id set - ";
 				if ( defined $peptide_id ) {
 					say "matches $opts{'protein_locus'}-$peptide_id";
@@ -157,25 +164,27 @@ sub update {
 				"SELECT allele_id FROM sequences WHERE (locus,sequence)=(?,?)",
 				[ $opts{'protein_locus'}, $translate->{'peptide'} ]
 			);
-			say "$id: setting peptide_id-$peptide_id";
-			eval {
-				$script->{'db'}->do(
-					'INSERT INTO sequence_extended_attributes (locus,field,allele_id,value,datestamp,curator) '
-					  . 'VALUES (?,?,?,?,?,?)',
-					undef,
-					$opts{'nucleotide_locus'},
-					$opts{'peptide_id_field'},
-					$allele->{'allele_id'},
-					$peptide_id,
-					'now',
-					-1
-				);
-			};
-			if ($@) {
-				$script->{'db'}->rollback;
-				die "$@\n";
+			if ( defined $peptide_id ) {
+				say "$id: setting peptide_id-$peptide_id";
+				eval {
+					$script->{'db'}->do(
+						'INSERT INTO sequence_extended_attributes (locus,field,allele_id,value,datestamp,curator) '
+						  . 'VALUES (?,?,?,?,?,?)',
+						undef,
+						$opts{'nucleotide_locus'},
+						$opts{'peptide_id_field'},
+						$allele->{'allele_id'},
+						$peptide_id,
+						'now',
+						-1
+					);
+				};
+				if ($@) {
+					$script->{'db'}->rollback;
+					die "$@\n";
+				}
+				$script->{'db'}->commit;
 			}
-			$script->{'db'}->commit;
 		}
 	}
 }
