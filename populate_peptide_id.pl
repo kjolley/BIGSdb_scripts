@@ -34,6 +34,7 @@ GetOptions(
 	'peptide_id_field=s'   => \$opts{'peptide_id_field'},
 	'p|protein_locus=s'    => \$opts{'protein_locus'},
 	'q|quiet'              => \$opts{'quiet'},
+	'u|update'             => \$opts{'update'}
 ) or die("Error in command line arguments\n");
 my $script = BIGSdb::Offline::Script->new(
 	{
@@ -71,6 +72,9 @@ sub main {
 	if ( $opts{'check'} ) {
 		check();
 	}
+	if ( $opts{'update'} ) {
+		update();
+	}
 }
 
 sub get_nucleotide_sequences {
@@ -104,9 +108,9 @@ sub check {
 	my $nuc_locus   = $script->{'datastore'}->get_locus_info( $opts{'nucleotide_locus'} );
 	my $orf         = $nuc_locus->{'orf'} // 1;
 	foreach my $allele (@$alleles) {
-		next if !defined $allele->{ $opts{'peptide_id_field'} };
-		my $translate = translate_sequence( $allele->{'sequence'}, $codon_table, $orf );
-		my $id        = "$opts{'nucleotide_locus'}-$allele->{'allele_id'} [peptide_id: $allele->{'peptide_id'}]";
+		my $translate  = translate_sequence( $allele->{'sequence'}, $codon_table, $orf );
+		my $peptide_id = $allele->{'peptide_id'} // 'ND';
+		my $id         = "$opts{'nucleotide_locus'}-$allele->{'allele_id'} [peptide_id: $peptide_id]";
 		if ( $allele->{'peptide_id'} ) {
 			my $peptide_seq = $peptides->{ $allele->{'peptide_id'} };
 			if ( !defined $peptide_seq ) {
@@ -123,9 +127,55 @@ sub check {
 			}
 		} else {
 			if ( !$translate->{'error'} ) {
-				say "$id: No peptide_id set";
+				my $peptide_id = $script->{'datastore'}->run_query(
+					"SELECT allele_id FROM sequences WHERE (locus,sequence)=(?,?)",
+					[ $opts{'protein_locus'}, $translate->{'peptide'} ]
+				);
+				print "$id: No peptide_id set - ";
+				if ( defined $peptide_id ) {
+					say "matches $opts{'protein_locus'}-$peptide_id";
+				} else {
+					say 'no matching peptide sequence';
+				}
 				next;
 			}
+		}
+	}
+}
+
+sub update {
+	my $alleles     = get_nucleotide_sequences();
+	my $peptides    = get_protein_sequences();
+	my $codon_table = $script->{'system'}->{'codon_table'} // 11;
+	my $nuc_locus   = $script->{'datastore'}->get_locus_info( $opts{'nucleotide_locus'} );
+	my $orf         = $nuc_locus->{'orf'} // 1;
+	foreach my $allele (@$alleles) {
+		my $translate = translate_sequence( $allele->{'sequence'}, $codon_table, $orf );
+		my $id        = "$opts{'nucleotide_locus'}-$allele->{'allele_id'}";
+		if ( !$allele->{'peptide_id'} && !$translate->{'error'} ) {
+			my $peptide_id = $script->{'datastore'}->run_query(
+				"SELECT allele_id FROM sequences WHERE (locus,sequence)=(?,?)",
+				[ $opts{'protein_locus'}, $translate->{'peptide'} ]
+			);
+			say "$id: setting peptide_id-$peptide_id";
+			eval {
+				$script->{'db'}->do(
+					'INSERT INTO sequence_extended_attributes (locus,field,allele_id,value,datestamp,curator) '
+					  . 'VALUES (?,?,?,?,?,?)',
+					undef,
+					$opts{'nucleotide_locus'},
+					$opts{'peptide_id_field'},
+					$allele->{'allele_id'},
+					$peptide_id,
+					'now',
+					-1
+				);
+			};
+			if ($@) {
+				$script->{'db'}->rollback;
+				die "$@\n";
+			}
+			$script->{'db'}->commit;
 		}
 	}
 }
