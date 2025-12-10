@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #Populate A. baumannii resistance profile field based on SIR values of
 #individual antibiotic fields
-#Written by Julia Moreno Manjon and Keith Jolley 2022
+#Written by Julia Moreno Manjon and Keith Jolley 2022-2025
 use strict;
 use warnings;
 use 5.010;
@@ -101,8 +101,10 @@ sub antib_panel_count_formula {
 		$tetracycline_SIR, $imipenem_SIR,   $meropenem_SIR,  $colistin_SIR
 	  )
 	  = @{$args}{
-		qw(amikacin_sir gentamicin_sir cefotaxime_sir cefepime_sir levofloxacin_sir tetracycline_sir
-		  imipenem_sir meropenem_sir colistin_sir)
+		qw(amikacin_CLSI_human_SIR gentamicin_CLSI_human_SIR cefotaxime_CLSI_human_SIR
+		  cefepime_CLSI_human_SIR levofloxacin_CLSI_human_SIR tetracycline_CLSI_human_SIR
+		  imipenem_CLSI_human_SIR meropenem_CLSI_human_SIR colistin_EUCAST_human_SIR
+		)
 	  };
 	my $antib_panel_count = 0;
 	foreach my $SIR (
@@ -123,17 +125,19 @@ sub family_count_formula {
 		$tetracycline_SIR, $imipenem_SIR,   $meropenem_SIR,  $colistin_SIR
 	  )
 	  = @{$args}{
-		qw(amikacin_sir gentamicin_sir cefotaxime_sir cefepime_sir levofloxacin_sir tetracycline_sir
-		  imipenem_sir meropenem_sir colistin_sir)
+		qw(amikacin_CLSI_human_SIR gentamicin_CLSI_human_SIR cefotaxime_CLSI_human_SIR
+		  cefepime_CLSI_human_SIR levofloxacin_CLSI_human_SIR tetracycline_CLSI_human_SIR
+		  imipenem_CLSI_human_SIR meropenem_CLSI_human_SIR colistin_EUCAST_human_SIR)
 	  };
 
 	#Define variable as empty string if undefined.
-	$_ //= '' foreach (
+	$_ //= ''
+	  foreach (
 		$amikacin_SIR,     $gentamicin_SIR, $cefotaxime_SIR, $cefepime_SIR, $levofloxacin_SIR,
 		$tetracycline_SIR, $imipenem_SIR,   $meropenem_SIR,  $colistin_SIR
-	);
+	  );
 	my $family_count = 0;
-	my %allowed = map { $_ => 1 } qw(S I R);
+	my %allowed      = map { $_ => 1 } qw(S I R);
 	if ( $allowed{$amikacin_SIR} or $allowed{$gentamicin_SIR} ) {    #Aminoglycosides
 		$family_count++;
 	}
@@ -163,13 +167,14 @@ sub antib_RI_formula {
 		$tetracycline_SIR, $imipenem_SIR,   $meropenem_SIR,  $colistin_SIR
 	  )
 	  = @{$args}{
-		qw(amikacin_sir gentamicin_sir cefotaxime_sir cefepime_sir levofloxacin_sir tetracycline_sir
-		  imipenem_sir meropenem_sir colistin_sir)
+		qw(amikacin_CLSI_human_SIR gentamicin_CLSI_human_SIR cefotaxime_CLSI_human_SIR
+		  cefepime_CLSI_human_SIR levofloxacin_CLSI_human_SIR tetracycline_CLSI_human_SIR
+		  imipenem_CLSI_human_SIR meropenem_CLSI_human_SIR colistin_EUCAST_human_SIR)
 	  };
 
 	#Define variable as empty string if undefined.
 	my $RI_count = 0;
-	my %allowed = ( 'R' => 1, 'I' => 1 );
+	my %allowed  = ( 'R' => 1, 'I' => 1 );
 	foreach my $SIR (
 		$amikacin_SIR,     $gentamicin_SIR, $cefotaxime_SIR, $cefepime_SIR, $levofloxacin_SIR,
 		$tetracycline_SIR, $imipenem_SIR,   $meropenem_SIR,  $colistin_SIR
@@ -189,8 +194,9 @@ sub antib_S_formula {
 		$tetracycline_SIR, $imipenem_SIR,   $meropenem_SIR,  $colistin_SIR
 	  )
 	  = @{$args}{
-		qw(amikacin_sir gentamicin_sir cefotaxime_sir cefepime_sir levofloxacin_sir tetracycline_sir
-		  imipenem_sir meropenem_sir colistin_sir)
+		qw(amikacin_CLSI_human_SIR gentamicin_CLSI_human_SIR cefotaxime_CLSI_human_SIR
+		  cefepime_CLSI_human_SIR levofloxacin_CLSI_human_SIR tetracycline_CLSI_human_SIR
+		  imipenem_CLSI_human_SIR meropenem_CLSI_human_SIR colistin_EUCAST_human_SIR)
 	  };
 
 	#Define variable as empty string if undefined.
@@ -215,17 +221,19 @@ sub antib_RIfam_formula {
 		$tetracycline_SIR, $imipenem_SIR,   $meropenem_SIR,  $colistin_SIR
 	  )
 	  = @{$args}{
-		qw(amikacin_sir gentamicin_sir cefotaxime_sir cefepime_sir levofloxacin_sir tetracycline_sir
-		  imipenem_sir meropenem_sir colistin_sir)
+		qw(amikacin_CLSI_human_SIR gentamicin_CLSI_human_SIR cefotaxime_CLSI_human_SIR
+		  cefepime_CLSI_human_SIR levofloxacin_CLSI_human_SIR tetracycline_CLSI_human_SIR
+		  imipenem_CLSI_human_SIR meropenem_CLSI_human_SIR colistin_EUCAST_human_SIR)
 	  };
 
 	#Define variable as empty string if undefined.
-	$_ //= '' foreach (
+	$_ //= ''
+	  foreach (
 		$amikacin_SIR,     $gentamicin_SIR, $cefotaxime_SIR, $cefepime_SIR, $levofloxacin_SIR,
 		$tetracycline_SIR, $imipenem_SIR,   $meropenem_SIR,  $colistin_SIR
-	);
+	  );
 	my $RIfam_count = 0;
-	my %allowed = ( 'R' => 1, 'I' => 1 );
+	my %allowed     = ( 'R' => 1, 'I' => 1 );
 	if ( $allowed{$amikacin_SIR} or $allowed{$gentamicin_SIR} ) {    #Aminoglycosides
 		$RIfam_count++;
 	}
