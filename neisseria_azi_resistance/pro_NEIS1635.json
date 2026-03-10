@@ -1,0 +1,632 @@
+[
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "1",
+    "sequence": "TTGCACGGATAAAAAGTCTTTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "68",
+    "type_allele": "",
+    "comments": "1bp thymine insertion in MtrR promoter",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "2",
+    "sequence": "TTGCACGGATAAAAAGTCTTTTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "69",
+    "type_allele": "",
+    "comments": "2bp thymine insertion in MtrR promoter ",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "3",
+    "sequence": "TTGCACGGATAAAAGTCTTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "adenosine deletion in promoter",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "4",
+    "sequence": "TTGCACGGATACAAAGTCTTTTTTATAATCCCAACCGTCAAACCGCGCTGGAACGAAAACGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "A\u2192C substitution and G deletion in MtrR promoter",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "5",
+    "sequence": "TTGCATGGTTACAAAGTCTTTTTTATAATCCGCCCTCATCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "A\u2192C substitution in MtrR promoter",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "6",
+    "sequence": "TTGCACGGATAAAAAGTCTTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "wild-type mtrR promoter",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "7",
+    "sequence": "TTGCATGGTTACAAAGTCTTTTTTATAATCCGCCCTCATCAAACCGACCCGAAACGAAACCGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "A\u2192C substitution in MtrR promoter",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "8",
+    "sequence": "TTACACGGATAAAAAGTCTTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "G\u2192A substitution in MtrR promoter",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "9",
+    "sequence": "TTGCACGGATACAAAGTCTTTTTTATAATCCCAACCGTCAAACCGCGACGGAACAAAAACGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "A\u2192C substitution in MtrR promoter",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "10",
+    "sequence": "TTGCATGGTTACAAAGTCTTTTTTATAATCCGCCCTCATCAAACCAACCCGAAACGAAAACGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "A\u2192C substitution in MtrR promoter",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "11",
+    "sequence": "TTGCACGGATACAAAGTCTTTTTTATAATCCCAACCGTCAAACCGCGCCGGAACGAAACCGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "A\u2192C substitution and G deletion in MtrR promoter",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "12",
+    "sequence": "TTGCACGGATACAAAGTCTTTTTTATAATCCCAACCGTCAAACTGCGCCGGAACGAAAACGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "A\u2192C substitution in MtrR promoter",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "13",
+    "sequence": "TTGCACGGATACAAAGTCTTTTTTTATAATCCCAACCGTCAAACCGCGCCGGAACGAAACCGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "A\u2192C substitution in MtrR promoter; 1bp thymine insertion",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "14",
+    "sequence": "CTGCACGGATAAAAAGTCTTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "Wild-type",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "15",
+    "sequence": "TTACATGGTTACAAAGTCTTTTTTATAATCCGCCCTCATCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "A\u2192C substitution in MtrR promoter",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "16",
+    "sequence": "TTGCACGGATACAAAGTCTTTTTTATAATCCCAACCGTCAAACCGCGACGGAACGAAAACGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "A\u2192C substitution and G deletion in MtrR promoter",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "17",
+    "sequence": "TTGCATGGTTTCAAAGCATTTTTTATAATCCGCCCTCATCAAACCGCACCAAAACGAAACTGCCGTT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "meningococcal mtrR promoter sequence",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "18",
+    "sequence": "TTGCACGGATACAAAGTCTTTTTTATAATCCCAACCGTCAAACCGCGCCGGAACAAAACCGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "A\u2192C substitution and G deletion in MtrR promoter",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "19",
+    "sequence": "TTGCATGGTTACAAAGTCTTTTTTATAATCCGCCCTCATCAAACCGACCCGAAACGAAAACACCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "A\u2192C substitution in MtrR promoter has a novel G\u2192A substitution towards 3'end (bp62)",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "20",
+    "sequence": "TTACATGGTTACAAGTCTTTTTTATAATCCGCCCTCATCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "A\u2192C substitution in MtrR promoter A bp deletion at bp15",
+    "SNP12": "",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "21",
+    "sequence": "TTGCATGGTTGCAAAGTCTTTTTTATAATCCGCCCTCATCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "A\u2192G followed by A\u2192C substitutions in MtrR promoter",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "22",
+    "sequence": "TTACACGGATACAAAGTCTTTTTTATAATCCCAACCGTCAAACCGCGACGGAACGAAAACGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "A\u2192C and G deletion substitution in MtrR promoter",
+    "SNP12": "",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "23",
+    "sequence": "TTGCACGGATACAAAGTATTTTTTATAATCCCAACCGTCAAACCGCGACGGAACGAAAACGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "meningococcal-like mtrR promoter sequence",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "24",
+    "sequence": "TTGGACGGATAAAAAGTCTTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "4C>G",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "25",
+    "sequence": "TTGCACGGATAAAAAGTCTTTTTTATGATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "27A>G",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "26",
+    "sequence": "TTGCACGGTTACCAAGTCTTTTTTACAATCCCAACCGTCAAACCGCGCCGGAACGAAACCGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "12A>C + 32delG",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "27",
+    "sequence": "TTGCACGGATACAAAGTCTTTTTTATAACCCCAACCGTCAAACCGCGACGGAACGAAAACGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "12A>C + 32delG",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "28",
+    "sequence": "TTGCACGGATAAAAGTCTTTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "12delA + 18_19insT",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "29",
+    "sequence": "TTGCACGGATGAAAAGTCTTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "11A>G",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "30",
+    "sequence": "TTGGACGGATAAAAAGTCTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "19delT",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "31",
+    "sequence": "TTACACGGATAAAAAGTCTTTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "68",
+    "type_allele": "",
+    "comments": "3G>A + 18_19insT",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "32",
+    "sequence": "TTGCACGGATAAAAAGTCTTTTTTATAGTCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "28A>G",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "33",
+    "sequence": "TTGCACGGATATAAAGTCTTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "12A>T",
+    "SNP12": "",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "34",
+    "sequence": "CTGCACGGATAAAAGTCTTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "1T>C + 11delA",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "35",
+    "sequence": "TTGCATGGTTTCAAAGCATTTTTTATAATCCGCCCTCATCAAACCGTGCCGAAACGAAACTGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "11A>T; close match to meningococcal mtrR promoter sequence",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "36",
+    "sequence": "TTGCACGGATAAAAAGTCTTTTTTATAACCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "29T>C",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "37",
+    "sequence": "TTGCACGGATACAAAGTCTTTTTATAATCCCAACCGTCAAACCGCGCCGGAACGAAAACGCCATT",
+    "sequence length": "65",
+    "type_allele": "",
+    "comments": "12A>C + 32delG",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "38",
+    "sequence": "TTGCATGGTTTCAAAGCATTTTTTATAATCCGCCCTCATCAAACCGTGCCGAAACGAAACTGCCGTT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "11A>T; close match to meningococcal mtrR promoter sequence",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "39",
+    "sequence": "TTGCACGGATACAAGTCTTTTTTATAATCCCAACCGTCAAACCGCGACGGAACGAAAACGCCATT",
+    "sequence length": "65",
+    "type_allele": "",
+    "comments": "32delG",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "40",
+    "sequence": "TTGCACGGTTACCAAGTCTTTTTTATAATCCCAACCGTCAAACCGCGCCGGAACGAAAACGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "12A>C + 32delG",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "41",
+    "sequence": "TTGCACGGATACAAAGTCTTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "12A>C",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "42",
+    "sequence": "TTGCACGGATAAAAAGTCTTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATA",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "67T>A",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "43",
+    "sequence": "TTGCACGGATAAAAGTCTTTTTTATAATCCGCCCTCATCAAACCGACCCGAAACGAAACCGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "11delA",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "44",
+    "sequence": "TTGCACGGATACAAAGTCTTTTTATAATCCCAACCGTCAAACCGCGACGGAACGAAAACGCCATT",
+    "sequence length": "65",
+    "type_allele": "",
+    "comments": "12A>C + 32delG",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "45",
+    "sequence": "ATGCACGGATAAAAAGTCTTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "1TA",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "46",
+    "sequence": "TTGCATGGTTGCAAAGTCTTTTTTTATAATCCGCCCTCATCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "68",
+    "type_allele": "",
+    "comments": "11A>G + 12A>C + 18_19insT",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "47",
+    "sequence": "TTGCACGGATAAAAAGTCTTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACAAAAACGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "42G>A",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "48",
+    "sequence": "TTGCACGGATACAAAGTCTTTTTTATAATCCCAACCGTCAAACCGCGCCGGAACGAAAACGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "12A>C + 32delG",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "49",
+    "sequence": "TTGCATGGTTACAAAGTCTTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "12A>C",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "50",
+    "sequence": "TTGCACGGATAAAAATCTTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "16delG",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "51",
+    "sequence": "TTGCACGGATACAAAGTCTTTTTTATAATCCCAACCGTCAAACCGCGACGGAACGAAAACGCCATA",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "12A>C + 32delG",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "52",
+    "sequence": "TTGCACGGATAAAAAGTCTTTTTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "70",
+    "type_allele": "",
+    "comments": "18_19insTT",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "53",
+    "sequence": "TTGCACGGATAAAAAGTCTTTTTTTTATAATCCACCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "69",
+    "type_allele": "",
+    "comments": "18_19insTT",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "54",
+    "sequence": "TTGCACGGATAAAAGTCTTTTTTATAATCTGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "11delA",
+    "SNP12": "WT (A)",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "55",
+    "sequence": "TTGCATGGTTTCAAAGCATTTTTTTTATAATCCGCCTTCATCAAACCGTGCCGAAACGAAACTGCCGTT",
+    "sequence length": "69",
+    "type_allele": "",
+    "comments": "11_12insTC; close match to meningococcal mtrR promoter sequence",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "56",
+    "sequence": "TTGCACGGTTACCAAGTCTTTTTTATAATCCCAACCGTCAAACCGCGCCGGAACGAAACCGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "57",
+    "sequence": "TTGCATGGTTACACAGTCTTTTTTATAATCCGCCCTCATCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "58",
+    "sequence": "TTGCACGGATACAAAGTCTTTTTTTATAATCCCAACCGTCAAACCGCGACGGAACGAAAACGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "59",
+    "sequence": "TTGCACGGATACAAAGTCTTTTTTTATAATCCCAACCGTCAAACCGCGCCGGAACAAAACCGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "60",
+    "sequence": "TTGCACGGATACAAAGTCTTTTTTATAATCCCAACCGTCAAACCACGCCGGAATGAAACCGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "61",
+    "sequence": "TTGCATGGTTTCAAAGCATTTTTTATAATCCGCCTTCATCAAACCGTGCCGAAACGAAACTGCCATT",
+    "sequence length": "67",
+    "type_allele": "",
+    "comments": "",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "62",
+    "sequence": "TTGCATGGTTACAAAGTCTTTTTTTATAATCCGCCCTCATCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "68",
+    "type_allele": "",
+    "comments": "",
+    "SNP12": "A12C",
+    "flags": ""
+  },
+  {
+    "locus": "pro_NEIS1635",
+    "allele_id": "63",
+    "sequence": "TTGCACGGATAAAAAGTCTTTTTATAATCCGCCCTCGTCAAACCGACCCGAAACGAAAACGCCATT",
+    "sequence length": "66",
+    "type_allele": "",
+    "comments": "",
+    "SNP12": "WT (A)",
+    "flags": ""
+  }
+]

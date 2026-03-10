@@ -1,0 +1,802 @@
+[
+  {
+    "id": "27444",
+    "23S_rRNA": "437",
+    "NEIS1633": "16",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "31519",
+    "23S_rRNA": "466",
+    "NEIS1633": "18",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "31715",
+    "23S_rRNA": "434",
+    "NEIS1633": "649",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "31728",
+    "23S_rRNA": "234",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "31793",
+    "23S_rRNA": "477",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "1",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "37103",
+    "23S_rRNA": "430",
+    "NEIS1633": "371",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "37209",
+    "23S_rRNA": "430",
+    "NEIS1633": "1006",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "37545",
+    "23S_rRNA": "431",
+    "NEIS1633": "",
+    "pro_NEIS1635": "22",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "37556",
+    "23S_rRNA": "437",
+    "NEIS1633": "16",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "46954",
+    "23S_rRNA": "430",
+    "NEIS1633": "16",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "51695",
+    "23S_rRNA": "430",
+    "NEIS1633": "1006",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "52166",
+    "23S_rRNA": "477",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "2",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "53649",
+    "23S_rRNA": "470",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "54363",
+    "23S_rRNA": "439",
+    "NEIS1633": "16",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "56134",
+    "23S_rRNA": "430",
+    "NEIS1633": "1006",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "56146",
+    "23S_rRNA": "",
+    "NEIS1633": "1006",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "56216",
+    "23S_rRNA": "430",
+    "NEIS1633": "3353",
+    "pro_NEIS1635": "22",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "63114",
+    "23S_rRNA": "539",
+    "NEIS1633": "2285",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "75981",
+    "23S_rRNA": "495",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "76352",
+    "23S_rRNA": "431",
+    "NEIS1633": "3276",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "79124",
+    "23S_rRNA": "430",
+    "NEIS1633": "21",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "79205",
+    "23S_rRNA": "430",
+    "NEIS1633": "3353",
+    "pro_NEIS1635": "22",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "79372",
+    "23S_rRNA": "430",
+    "NEIS1633": "3353",
+    "pro_NEIS1635": "22",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "86659",
+    "23S_rRNA": "231",
+    "NEIS1633": "21",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "87137",
+    "23S_rRNA": "234",
+    "NEIS1633": "627",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "87311",
+    "23S_rRNA": "10",
+    "NEIS1633": "16",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "87570",
+    "23S_rRNA": "231",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "87648",
+    "23S_rRNA": "504",
+    "NEIS1633": "18",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "87682",
+    "23S_rRNA": "",
+    "NEIS1633": "678",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "88217",
+    "23S_rRNA": "",
+    "NEIS1633": "18",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "88314",
+    "23S_rRNA": "431",
+    "NEIS1633": "16",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "101934",
+    "23S_rRNA": "387",
+    "NEIS1633": "16",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "106793",
+    "23S_rRNA": "477",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "2",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "106820",
+    "23S_rRNA": "430",
+    "NEIS1633": "",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "106850",
+    "23S_rRNA": "231",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "106907",
+    "23S_rRNA": "468",
+    "NEIS1633": "636",
+    "pro_NEIS1635": "1",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "107059",
+    "23S_rRNA": "470",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "107157",
+    "23S_rRNA": "",
+    "NEIS1633": "16",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "107567",
+    "23S_rRNA": "10",
+    "NEIS1633": "22",
+    "pro_NEIS1635": "24",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "107733",
+    "23S_rRNA": "10",
+    "NEIS1633": "21",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "107745",
+    "23S_rRNA": "231",
+    "NEIS1633": "22",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "107824",
+    "23S_rRNA": "387",
+    "NEIS1633": "18",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "107896",
+    "23S_rRNA": "231",
+    "NEIS1633": "16",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "109144",
+    "23S_rRNA": "430",
+    "NEIS1633": "1006",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "109536",
+    "23S_rRNA": "231",
+    "NEIS1633": "669",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "109609",
+    "23S_rRNA": "430",
+    "NEIS1633": "1006",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "109634",
+    "23S_rRNA": "231",
+    "NEIS1633": "18",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "109806",
+    "23S_rRNA": "231",
+    "NEIS1633": "18",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "111583",
+    "23S_rRNA": "430",
+    "NEIS1633": "3353",
+    "pro_NEIS1635": "22",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "111664",
+    "23S_rRNA": "",
+    "NEIS1633": "451",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "111692",
+    "23S_rRNA": "231",
+    "NEIS1633": "18",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "114047",
+    "23S_rRNA": "495",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "115869",
+    "23S_rRNA": "387",
+    "NEIS1633": "16",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "115874",
+    "23S_rRNA": "430",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "116309",
+    "23S_rRNA": "234",
+    "NEIS1633": "18",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "116426",
+    "23S_rRNA": "",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "119537",
+    "23S_rRNA": "231",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "119623",
+    "23S_rRNA": "",
+    "NEIS1633": "1006",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "125763",
+    "23S_rRNA": "430",
+    "NEIS1633": "3353",
+    "pro_NEIS1635": "22",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "125811",
+    "23S_rRNA": "430",
+    "NEIS1633": "3474",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "128695",
+    "23S_rRNA": "231",
+    "NEIS1633": "1122",
+    "pro_NEIS1635": "14",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "128701",
+    "23S_rRNA": "10",
+    "NEIS1633": "654",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "128720",
+    "23S_rRNA": "231",
+    "NEIS1633": "18",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "128809",
+    "23S_rRNA": "387",
+    "NEIS1633": "18",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "128813",
+    "23S_rRNA": "10",
+    "NEIS1633": "654",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "129096",
+    "23S_rRNA": "387",
+    "NEIS1633": "632",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "129414",
+    "23S_rRNA": "231",
+    "NEIS1633": "22",
+    "pro_NEIS1635": "36",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "129523",
+    "23S_rRNA": "495",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "129781",
+    "23S_rRNA": "",
+    "NEIS1633": "369",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "129854",
+    "23S_rRNA": "430",
+    "NEIS1633": "1006",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "129971",
+    "23S_rRNA": "234",
+    "NEIS1633": "666",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "130027",
+    "23S_rRNA": "234",
+    "NEIS1633": "627",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "130135",
+    "23S_rRNA": "495",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "130575",
+    "23S_rRNA": "470",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "130718",
+    "23S_rRNA": "10",
+    "NEIS1633": "654",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "154248",
+    "23S_rRNA": "",
+    "NEIS1633": "18",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "159921",
+    "23S_rRNA": "430",
+    "NEIS1633": "1006",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "160079",
+    "23S_rRNA": "231",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "160152",
+    "23S_rRNA": "231",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "160178",
+    "23S_rRNA": "430",
+    "NEIS1633": "3353",
+    "pro_NEIS1635": "22",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "160227",
+    "23S_rRNA": "387",
+    "NEIS1633": "18",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "160304",
+    "23S_rRNA": "231",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "160425",
+    "23S_rRNA": "437",
+    "NEIS1633": "18",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "160624",
+    "23S_rRNA": "430",
+    "NEIS1633": "3353",
+    "pro_NEIS1635": "22",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "160764",
+    "23S_rRNA": "231",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "162806",
+    "23S_rRNA": "231",
+    "NEIS1633": "21",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "162814",
+    "23S_rRNA": "231",
+    "NEIS1633": "21",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "162844",
+    "23S_rRNA": "231",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "162885",
+    "23S_rRNA": "",
+    "NEIS1633": "18",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "163136",
+    "23S_rRNA": "10",
+    "NEIS1633": "630",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "163184",
+    "23S_rRNA": "430",
+    "NEIS1633": "16",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "163409",
+    "23S_rRNA": "234",
+    "NEIS1633": "666",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "163435",
+    "23S_rRNA": "234",
+    "NEIS1633": "636",
+    "pro_NEIS1635": "1",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "163886",
+    "23S_rRNA": "470",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "3",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "163906",
+    "23S_rRNA": "442",
+    "NEIS1633": "1943",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "163926",
+    "23S_rRNA": "495",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "164068",
+    "23S_rRNA": "",
+    "NEIS1633": "654",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "164094",
+    "23S_rRNA": "231",
+    "NEIS1633": "1122",
+    "pro_NEIS1635": "14",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "164239",
+    "23S_rRNA": "430",
+    "NEIS1633": "1006",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  },
+  {
+    "id": "164453",
+    "23S_rRNA": "430",
+    "NEIS1633": "367",
+    "pro_NEIS1635": "6",
+    "private_record": "false",
+    "private_owner": ""
+  }
+]
