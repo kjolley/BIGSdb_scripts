@@ -7,6 +7,8 @@
 
 # Written by Made Krisna.
 # Modified to use API inputs by Keith Jolley.
+# Copyright (c) University of Oxford.
+# Version 20260311
 
 import os
 import json
@@ -130,8 +132,6 @@ def main():
                     break
         else:
             varpro_SNP12 = "no value"
-
-        #        print(varpro_SNP12)
 
         if allele_mtrd != "":
             for idx, dict_allele in enumerate(input_a[2].get("alleles", [])):
