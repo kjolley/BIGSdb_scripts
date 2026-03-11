@@ -6,7 +6,7 @@
 # and pro_NEIS1635 (allele number)
 
 # Written by Made Krisna.
-# Modified by Keith Jolley.
+# Modified to use API inputs by Keith Jolley.
 
 import os
 import json
@@ -42,156 +42,212 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-loci = ["23S_rRNA", "pro_NEIS1635", "NEIS1633"]
-variants = [["SNP2599", "SNP2047"], ["SNP12"], ["SAV823", "SAV854", "SAV59"]]
 
-file_paths = [args.rRNA_23S, args.pro_NEIS1635, args.NEIS1633]
+def main():
 
-input_a = []
-for path in file_paths:
-    if not os.path.exists(path):
-        exit(f"{path} does not exist.")
-    with open(path, "r") as file:
-        data = json.load(file)
-        input_a.append(data)
+    loci = ["23S_rRNA", "pro_NEIS1635", "NEIS1633"]
+    variants = [["SNP2599", "SNP2047"], ["SNP12"], ["SAV823", "SAV854", "SAV59"]]
 
-if os.path.exists(args.isolates):
-    with open(args.isolates, "r") as file:
-        input_b = json.load(file)
-else:
-    exit(f"{args.isolates} does not exist.")
+    file_paths = [args.rRNA_23S, args.pro_NEIS1635, args.NEIS1633]
 
-for idx, locus_info in enumerate(input_a):
-    new_locus_info = []
-    for allele_info in locus_info:
-        complete = list(allele_info.keys())
-        retain = variants[idx]
-        retain.append("locus")
-        retain.append("allele_id")
-        remove = list(set(complete) - set(retain))
-        for item in remove:
-            del allele_info[item]
+    input_a = []
+    for path in file_paths:
+        if not os.path.exists(path):
+            exit(f"{path} does not exist.")
+        with open(path, "r") as file:
+            data = json.load(file)
+            input_a.append(data)
 
-isolate_ids = []
-var23_SNP2047s = []
-var23_SNP2599s = []
-varpro_SNP12s = []
-varmtrd_SAV59s = []
-varmtrd_SAV823s = []
-varmtrd_SAV854s = []
-
-for index, isolate_dict in enumerate(input_b):
-    isolate_id = isolate_dict["id"]
-
-    allele_23s = isolate_dict[loci[0]]
-    allele_pro = isolate_dict[loci[1]]
-    allele_mtrd = isolate_dict[loci[2]]
-
-    if allele_23s != "":
-        for idx, dict_allele in enumerate(input_a[0]):
-            if dict_allele["allele_id"] == allele_23s:
-                var23_SNP2047 = dict_allele["SNP2047"]
-                var23_SNP2599 = dict_allele["SNP2599"]
+    if os.path.exists(args.isolates):
+        with open(args.isolates, "r") as file:
+            input_b = json.load(file)
     else:
-        var23_SNP2047 = "no value"
-        var23_SNP2599 = "no value"
+        exit(f"{args.isolates} does not exist.")
 
-    if allele_pro != "":
-        for idx, dict_allele in enumerate(input_a[1]):
-            if dict_allele["allele_id"] == allele_pro:
-                varpro_SNP12 = dict_allele["SNP12"]
-    else:
-        varpro_SNP12 = "no value"
+    for idx, allele_list in enumerate(input_a):
+        for allele_info in allele_list.get("alleles", []):
+            complete = list(allele_info.keys())
+            locus = extract_last_value_from_url(allele_info.get("locus"))
+            allele_info["locus"] = locus
+            retain = ["locus", "allele_id", "SNPs", "SAVs"]
 
-    if allele_mtrd != "":
-        for idx, dict_allele in enumerate(input_a[2]):
-            if dict_allele["allele_id"] == allele_mtrd:
-                varmtrd_SAV59 = dict_allele["SAV59"]
-                varmtrd_SAV823 = dict_allele["SAV823"]
-                varmtrd_SAV854 = dict_allele["SAV854"]
-    else:
-        varmtrd_SAV59 = "no value"
-        varmtrd_SAV823 = "no value"
-        varmtrd_SAV854 = "no value"
+            remove = list(set(complete) - set(retain))
+            for item in remove:
+                del allele_info[item]
 
-    isolate_ids.append(isolate_id)
-    var23_SNP2047s.append(var23_SNP2047)
-    var23_SNP2599s.append(var23_SNP2599)
-    varpro_SNP12s.append(varpro_SNP12)
-    varmtrd_SAV59s.append(varmtrd_SAV59)
-    varmtrd_SAV823s.append(varmtrd_SAV823)
-    varmtrd_SAV854s.append(varmtrd_SAV854)
+    isolate_ids = []
+    var23_SNP2047s = []
+    var23_SNP2599s = []
+    varpro_SNP12s = []
+    varmtrd_SAV59s = []
+    varmtrd_SAV823s = []
+    varmtrd_SAV854s = []
 
-df_main = pd.DataFrame(
-    {
-        "id": isolate_ids,
-        "23s_A2059G": var23_SNP2047s,
-        "23s_C2599T": var23_SNP2599s,
-        "12AC_subs": varpro_SNP12s,
-        "NEIS1633_G59D": varmtrd_SAV59s,
-        "NEIS1633_K823D/E": varmtrd_SAV823s,
-        "NEIS1633_F854L": varmtrd_SAV854s,
-    }
-)
+    for index, isolate_dict in enumerate(input_b):
+        isolate_id = isolate_dict["id"]
 
-results = []
-results_idtrack = []
+        allele_23s = isolate_dict[loci[0]]
+        allele_pro = isolate_dict[loci[1]]
+        allele_mtrd = isolate_dict[loci[2]]
+        var23_SNP2047 = ""
+        var23_SNP2599 = ""
+        varpro_SNP12 = ""
+        varmtrd_SAV59 = ""
+        varmtrd_SAV823 = ""
+        varmtrd_SAV854 = ""
 
-for index, row in df_main.iterrows():
-    if row["12AC_subs"] == "WT (A)":
-        if row["23s_C2599T"] == "C2599T":  # SNP2599
-            results.append("R")
-            results_idtrack.append(row["id"])
-        elif row["23s_C2599T"] != "WT (C)" and row["23s_C2599T"] != "C2599T":
-            if row["23s_C2599T"] == "no value":
-                results.append("insufficient data")
-                results_idtrack.append(row["id"])
-            else:
-                results.append("S")
-                results_idtrack.append(row["id"])
+        if allele_23s != "":
+            for idx, dict_allele in enumerate(input_a[0].get("alleles", [])):
+                if dict_allele["allele_id"] == allele_23s:
+                    for snp in dict_allele.get("SNPs", []):
+                        if snp["position"] == 2047:
+                            var23_SNP2047 = (
+                                "WT (" + snp["nucleotide"] + ")"
+                                if snp["wild_type"]
+                                else "A2047" + snp["nucleotide"]
+                            )
+                        elif snp["position"] == 2599:
+                            var23_SNP2599 = (
+                                "WT (" + snp["nucleotide"] + ")"
+                                if snp["wild_type"]
+                                else "C2599" + snp["nucleotide"]
+                            )
+                    break
         else:
-            if row["NEIS1633_K823D/E"] != "WT (K)":
-                if row["NEIS1633_K823D/E"] == "no value":
-                    results.append("insufficient data")
-                    results_idtrack.append(row["id"])
-                else:
-                    results.append("S")
-                    results_idtrack.append(row["id"])
-            else:
-                if row["23s_A2059G"] == "WT (A)":  # SNP2047 on PubMLST
-                    results.append("S")
-                    results_idtrack.append(row["id"])
-                elif row["23s_A2059G"] == "no value":
-                    results.append("insufficient data")
-                    results_idtrack.append(row["id"])
-                else:
-                    results.append("R")
-                    results_idtrack.append(row["id"])
-    else:
-        if row["NEIS1633_F854L"] == "WT (F)":
-            results.append("S")
-            results_idtrack.append(row["id"])
+            var23_SNP2047 = "no value"
+            var23_SNP2599 = "no value"
+
+        if allele_pro != "":
+            for idx, dict_allele in enumerate(input_a[1].get("alleles", [])):
+                if dict_allele["allele_id"] == allele_pro:
+                    for snp in dict_allele.get("SNPs", []):
+                        if snp["position"] == 12:
+                            varpro_SNP12 = (
+                                "WT (" + snp["nucleotide"] + ")"
+                                if snp["wild_type"]
+                                else "A12" + snp["nucleotide"]
+                            )
+                    break
         else:
-            if row["23s_C2599T"] == "WT (C)":
-                if row["NEIS1633_G59D"] == "WT (G)":
-                    results.append("S")
-                    results_idtrack.append(row["id"])
-                elif row["NEIS1633_G59D"] == "no value":
-                    results.append("insufficient data")
-                    results_idtrack.append(row["id"])
-                else:
-                    results.append("R")
-                    results_idtrack.append(row["id"])
-            elif row["23s_C2599T"] == "no value":
-                results.append("insufficient data")
-                results_idtrack.append(row["id"])
-            else:
+            varpro_SNP12 = "no value"
+
+        #        print(varpro_SNP12)
+
+        if allele_mtrd != "":
+            for idx, dict_allele in enumerate(input_a[2].get("alleles", [])):
+                if dict_allele["allele_id"] == allele_mtrd:
+                    for sav in dict_allele.get("SAVs", []):
+                        if sav["position"] == 59:
+                            varmtrd_SAV59 = (
+                                "WT (" + sav["amino_acid"] + ")"
+                                if sav["wild_type"]
+                                else "G59" + sav["amino_acid"]
+                            )
+                        elif sav["position"] == 823:
+                            varmtrd_SAV823 = (
+                                "WT (" + sav["amino_acid"] + ")"
+                                if sav["wild_type"]
+                                else "K823" + sav["amino_acid"]
+                            )
+                        elif sav["position"] == 854:
+                            varmtrd_SAV854 = (
+                                "WT (" + sav["amino_acid"] + ")"
+                                if sav["wild_type"]
+                                else "F854" + sav["amino_acid"]
+                            )
+                    break
+
+        else:
+            varmtrd_SAV59 = "no value"
+            varmtrd_SAV823 = "no value"
+            varmtrd_SAV854 = "no value"
+
+        isolate_ids.append(isolate_id)
+        var23_SNP2047s.append(var23_SNP2047)
+        var23_SNP2599s.append(var23_SNP2599)
+        varpro_SNP12s.append(varpro_SNP12)
+        varmtrd_SAV59s.append(varmtrd_SAV59)
+        varmtrd_SAV823s.append(varmtrd_SAV823)
+        varmtrd_SAV854s.append(varmtrd_SAV854)
+
+    df_main = pd.DataFrame(
+        {
+            "id": isolate_ids,
+            "23s_A2059G": var23_SNP2047s,
+            "23s_C2599T": var23_SNP2599s,
+            "12AC_subs": varpro_SNP12s,
+            "NEIS1633_G59D": varmtrd_SAV59s,
+            "NEIS1633_K823D/E": varmtrd_SAV823s,
+            "NEIS1633_F854L": varmtrd_SAV854s,
+        }
+    )
+
+    results = []
+    results_idtrack = []
+
+    for index, row in df_main.iterrows():
+        if row["12AC_subs"] == "WT (A)":
+            if row["23s_C2599T"] == "C2599T":  # SNP2599
                 results.append("R")
                 results_idtrack.append(row["id"])
+            elif row["23s_C2599T"] != "WT (C)" and row["23s_C2599T"] != "C2599T":
+                if row["23s_C2599T"] == "no value":
+                    results.append("insufficient data")
+                    results_idtrack.append(row["id"])
+                else:
+                    results.append("S")
+                    results_idtrack.append(row["id"])
+            else:
+                if row["NEIS1633_K823D/E"] != "WT (K)":
+                    if row["NEIS1633_K823D/E"] == "no value":
+                        results.append("insufficient data")
+                        results_idtrack.append(row["id"])
+                    else:
+                        results.append("S")
+                        results_idtrack.append(row["id"])
+                else:
+                    if row["23s_A2059G"] == "WT (A)":  # SNP2047 on PubMLST
+                        results.append("S")
+                        results_idtrack.append(row["id"])
+                    elif row["23s_A2059G"] == "no value":
+                        results.append("insufficient data")
+                        results_idtrack.append(row["id"])
+                    else:
+                        results.append("R")
+                        results_idtrack.append(row["id"])
+        else:
+            if row["NEIS1633_F854L"] == "WT (F)":
+                results.append("S")
+                results_idtrack.append(row["id"])
+            else:
+                if row["23s_C2599T"] == "WT (C)":
+                    if row["NEIS1633_G59D"] == "WT (G)":
+                        results.append("S")
+                        results_idtrack.append(row["id"])
+                    elif row["NEIS1633_G59D"] == "no value":
+                        results.append("insufficient data")
+                        results_idtrack.append(row["id"])
+                    else:
+                        results.append("R")
+                        results_idtrack.append(row["id"])
+                elif row["23s_C2599T"] == "no value":
+                    results.append("insufficient data")
+                    results_idtrack.append(row["id"])
+                else:
+                    results.append("R")
+                    results_idtrack.append(row["id"])
 
-df_result = pd.DataFrame({"id": results_idtrack, "prediction": results})
+    df_result = pd.DataFrame({"id": results_idtrack, "prediction": results})
 
-if args.output:
-    df_result.to_json(args.output, orient="records", compression="infer")
-else:
-    print(df_result.to_json(orient="records", compression="infer"))
+    if args.output:
+        df_result.to_json(args.output, orient="records", compression="infer")
+    else:
+        print(df_result.to_json(orient="records", compression="infer"))
+
+
+def extract_last_value_from_url(url):
+    return url.rstrip("/").split("/")[-1]
+
+
+if __name__ == "__main__":
+    main()
