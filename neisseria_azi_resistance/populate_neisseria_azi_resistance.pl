@@ -113,7 +113,7 @@ sub main {
 	my $qry =
 		qq(SELECT id FROM $script->{'system'}->{'view'} WHERE species='Neisseria gonorrhoeae' AND id )
 	  . q(IN (SELECT isolate_id FROM seqbin_stats WHERE total_length>1500000) );
-	$qry .= q(AND id NOT IN (SELECT isolate_id FROM eav_text WHERE field='azithromycin_resistance'))
+	$qry .= q(AND id NOT IN (SELECT isolate_id FROM eav_text WHERE field='azithromycin'))
 	  if !$opts{'refresh'};
 	$qry .= q(ORDER BY id);
 	my $ids = $script->{'datastore'}->run_query( $qry, undef, { fetch => 'col_arrayref' } );
