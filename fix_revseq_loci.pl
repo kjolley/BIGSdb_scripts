@@ -4,7 +4,7 @@
 #Written by Keith Jolley
 #Copyright (c) 2026, University of Oxford
 #E-mail: keith.jolley@biology.ox.ac.uk
-#Version: 20260912
+#Version: 20260913
 use strict;
 use warnings;
 use 5.010;
@@ -70,15 +70,20 @@ sub main {
 	my $reverse_complemented = [];
 	my $correct_loci         = [];
 	my $loci_with_problems   = [];
+	my $invalid_alleles      = {};
 	foreach my $locus (@$loci) {
 		print qq(Checking $locus:\t);
 		my $locus_info = $script->{'datastore'}->get_locus_info($locus);
 		my $order      = $locus_info->{'allele_id_format'} eq 'integer' ? 'CAST (allele_id AS int)' : 'allele_id';
-		my $alleles    = $script->{'datastore'}->run_query( "SELECT * FROM sequences WHERE locus=? ORDER BY $order",
+		my $alleles =
+		  $script->{'datastore'}
+		  ->run_query( "SELECT * FROM sequences WHERE locus=? AND allele_id NOT IN ('N','0','P') ORDER BY $order",
 			$locus, { fetch => 'all_arrayref', slice => {} } );
 		next if !@$alleles;
-		my $all_ok     = 1;
-		my $all_revseq = 1;
+		my $all_ok         = 1;
+		my $all_revseq     = 1;
+		my $invalid_allele = [];
+
 		foreach my $allele (@$alleles) {
 			my $check_cds = BIGSdb::Utils::is_complete_cds( $allele->{'sequence'},
 				{ start_codons => [qw(ATG GTG TTG CTG ATT ATC ATA)] } );
@@ -93,9 +98,13 @@ sub main {
 			  BIGSdb::Utils::is_complete_cds( $revseq, { start_codons => [qw(ATG GTG TTG CTG ATT ATC ATA)] } );
 			if ( !$check_reverse_cds->{'cds'} ) {
 				$all_revseq = 0;
+				push @$invalid_allele, $allele->{'allele_id'};
 				next;
 			}
 
+		}
+		if (@$invalid_allele) {
+			$invalid_alleles->{$locus} = $invalid_allele;
 		}
 		my $status;
 
@@ -106,7 +115,7 @@ sub main {
 			$status = 'all ok';
 			push @$correct_loci, $locus;
 		} else {
-			$status = "non valid alleles";
+			$status = 'non valid alleles';
 			push @$loci_with_problems, $locus;
 		}
 
@@ -117,18 +126,21 @@ sub main {
 		say $status;
 	}
 	if (@$reverse_complemented) {
-		append_log("Reverse-complemented:");
+		append_log('Reverse-complemented:');
 		append_log($_) foreach @$reverse_complemented;
 		append_log();
 	}
 	if (@$correct_loci) {
-		append_log("Normal CDS:");
+		append_log('Normal CDS:');
 		append_log($_) foreach @$correct_loci;
 		append_log();
 	}
 	if (@$loci_with_problems) {
-		append_log("Loci with some invalid alleles:");
-		append_log($_) foreach @$loci_with_problems;
+		append_log('Loci with some invalid alleles:');
+		foreach my $locus (@$loci_with_problems) {
+			local $" = q(,);
+			append_log("$locus (@{$invalid_alleles->{$locus}})");
+		}
 		append_log();
 	}
 }
