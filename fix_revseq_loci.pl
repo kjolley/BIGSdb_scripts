@@ -103,9 +103,7 @@ sub main {
 			}
 
 		}
-		if (@$invalid_allele) {
-			$invalid_alleles->{$locus} = $invalid_allele;
-		}
+		$invalid_alleles->{$locus} = $invalid_allele;
 		my $status;
 
 		if ($all_revseq) {
@@ -149,8 +147,10 @@ sub fix {
 	my ($locus)    = @_;
 	my $locus_info = $script->{'datastore'}->get_locus_info($locus);
 	my $order      = $locus_info->{'allele_id_format'} eq 'integer' ? 'CAST (allele_id AS int)' : 'allele_id';
-	my $alleles    = $script->{'datastore'}->run_query( "SELECT * FROM sequences WHERE locus=? ORDER BY $order",
-		$locus, { fetch => 'all_arrayref', slice => {} } );
+	my $alleles    = $script->{'datastore'}->run_query(
+		"SELECT * FROM sequences WHERE locus=? AND allele_id NOT IN ('N','0','P') ORDER BY $order",
+		$locus, { fetch => 'all_arrayref', slice => {} }
+	);
 	return if !@$alleles;
 	eval {
 		foreach my $allele (@$alleles) {
