@@ -5,6 +5,7 @@ Create a dated snapshot of a PubMLST/BIGSdb scheme.
 
 Written by Keith Jolley.
 Copyright (c) University of Oxford 2026.
+Version: 20261012
 License: GPL3.
 
 The resulting ZIP archive contains:
@@ -86,6 +87,7 @@ class BIGSdbClient:
         self,
         url: str,
         accept: str = "*/*",
+        allow_404: bool = False,
     ) -> bytes:
         headers = {
             "Accept": accept,
@@ -106,6 +108,8 @@ class BIGSdbClient:
                     return response.read()
 
             except urllib.error.HTTPError as exc:
+                if exc.code == 404 and allow_404:
+                    return b""
                 try:
                     detail = exc.read().decode(
                         "utf-8",
@@ -133,8 +137,13 @@ class BIGSdbClient:
         self,
         url: str,
         accept: str = "text/plain",
+        allow_404: bool = False,
     ) -> str:
-        return self.request(url, accept).decode(
+        return self.request(
+            url,
+            accept,
+            allow_404=allow_404,
+        ).decode(
             "utf-8",
             errors="replace",
         )
@@ -366,6 +375,7 @@ def get_locus_snapshot(
     later_text = client.get_text(
         later_url,
         "text/plain",
+        allow_404=True,
     )
 
     later = parse_fasta(later_text, locus)
@@ -416,6 +426,7 @@ def get_profile_snapshot(
     later_text = client.get_text(
         later_url,
         "text/tab-separated-values",
+        allow_404=True,
     )
 
     later_header, later_rows = parse_tsv(later_text)
